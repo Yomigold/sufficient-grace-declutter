@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ledgr — Settings</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .settings-wrap { max-width: 560px; }
+    .settings-section {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--r); margin-bottom: 1.5rem; overflow: hidden;
+    }
+    .settings-section-header {
+      padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+      font-size: .875rem; font-weight: 600;
+      display: flex; align-items: center; gap: .6rem;
+    }
+    .settings-section-header svg { color: var(--gold); }
+    .settings-body { padding: 1.25rem; }
+    .settings-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 1rem; margin-bottom: 1.1rem;
+    }
+    .settings-row:last-child { margin-bottom: 0; }
+    .settings-label { font-size: .875rem; font-weight: 500; }
+    .settings-hint  { font-size: .75rem; color: var(--text3); margin-top: .15rem; }
+    .s-toggle {
+      position: relative; width: 42px; height: 24px;
+      cursor: pointer; display: inline-block; flex-shrink: 0;
+    }
+    .s-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .s-track {
+      position: absolute; inset: 0; background: var(--border);
+      border-radius: 12px; transition: background .2s;
+    }
+    .s-toggle input:checked + .s-track { background: var(--gold); }
+    .s-thumb {
+      position: absolute; top: 3px; left: 3px;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #fff; transition: transform .2s; pointer-events: none;
+    }
+    .s-toggle input:checked ~ .s-thumb { transform: translateX(18px); }
+    .settings-input {
+      width: 100%;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--rsm); padding: .65rem 1rem;
+      color: var(--text); font-size: .9rem; font-family: inherit;
+      outline: none; transition: border-color .15s; box-sizing: border-box;
+    }
+    .settings-input:focus { border-color: var(--gold); }
+    .settings-field { margin-bottom: 1rem; }
+    .settings-field:last-child { margin-bottom: 0; }
+    .settings-field label {
+      display: block; font-size: .72rem; font-weight: 700;
+      letter-spacing: .05em; text-transform: uppercase;
+      color: var(--text3); margin-bottom: .4rem;
+    }
+    .field-hint { font-size: .72rem; color: var(--text3); margin-top: .35rem; }
+    .field-hint a { color: var(--available); }
+    .settings-note {
+      background: rgba(201,168,76,.07); border: 1px solid rgba(201,168,76,.2);
+      border-radius: var(--rsm); padding: .75rem 1rem;
+      font-size: .8rem; color: var(--text2); line-height: 1.5; margin-top: 1rem;
+    }
+    .settings-note strong { color: var(--gold); }
+    .acct-row {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: .6rem 0; border-bottom: 1px solid var(--border);
+    }
+    .acct-row:last-child { border-bottom: none; }
+    .acct-label { font-size: .72rem; color: var(--text3); text-transform: uppercase; letter-spacing: .06em; }
+    .acct-val   { font-size: .875rem; color: var(--text); font-weight: 500; }
+    .btn-row { display: flex; gap: .6rem; margin-top: 1.1rem; }
+
+    /* Profile picture */
+    .pic-wrap { display: flex; align-items: center; gap: 1.25rem; margin-bottom: 1.25rem; }
+    .pic-preview {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--gold-dim); border: 3px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      color: var(--gold); font-size: 2rem; flex-shrink: 0;
+      overflow: hidden;
+    }
+    .pic-preview img { width: 100%; height: 100%; object-fit: cover; }
+    .pic-actions { display: flex; flex-direction: column; gap: .5rem; }
+    .pic-remove { background: none; border: none; font-size: .8rem; color: var(--danger); cursor: pointer; text-align: left; padding: 0; }
+    .pic-remove:hover { text-decoration: underline; }
+
+    /* Password strength bar */
+    .pw-strength { margin-top: .4rem; display: flex; gap: .3rem; }
+    .pw-bar { height: 3px; flex: 1; border-radius: 2px; background: var(--border); transition: background .25s; }
+    .pw-bar.fill-weak    { background: var(--danger); }
+    .pw-bar.fill-fair    { background: var(--sold); }
+    .pw-bar.fill-strong  { background: var(--available); }
+    .pw-label { font-size: .68rem; color: var(--text3); margin-top: .3rem; }
+    .pw-wrap-s { position: relative; }
+    .pw-wrap-s input { padding-right: 2.5rem; }
+    .toggle-pw-s {
+      position: absolute; right: .75rem; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; color: var(--text3);
+      display: flex; align-items: center; transition: color .15s; padding: 0;
+    }
+    .toggle-pw-s:hover { color: var(--text2); }
+    .theme-btn {
+      flex: 1; padding: .6rem; border-radius: var(--rsm);
+      border: 2px solid var(--border); background: var(--surface);
+      cursor: pointer; font-size: .8rem; font-weight: 600;
+      color: var(--text2); transition: all .15s;
+      display: flex; flex-direction: column; align-items: center; gap: .4rem;
+    }
+    .theme-btn:hover { border-color: var(--border-h); color: var(--text); }
+    .theme-btn.active { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+
+    /* Font size buttons */
+    .font-size-btns { display: flex; gap: .5rem; }
+    .font-size-btn {
+      flex: 1; padding: .55rem .4rem; border-radius: var(--rsm);
+      border: 2px solid var(--border); background: var(--surface);
+      cursor: pointer; font-weight: 700; color: var(--text2);
+      transition: all .15s; display: flex; flex-direction: column;
+      align-items: center; gap: .25rem; line-height: 1;
+    }
+    .font-size-btn:nth-child(1) { font-size: .75rem; }
+    .font-size-btn:nth-child(2) { font-size: .9rem; }
+    .font-size-btn:nth-child(3) { font-size: 1.05rem; }
+    .font-size-btn:nth-child(4) { font-size: 1.2rem; }
+    .font-size-btn span { font-size: .65rem; font-weight: 500; color: var(--text3); }
+    .font-size-btn:hover { border-color: var(--border-h); color: var(--text); }
+    .font-size-btn.active { border-color: var(--gold); color: var(--gold); background: var(--gold-dim); }
+    .font-size-btn.active span { color: var(--gold); }
+    .theme-swatch {
+      width: 100%; height: 36px; border-radius: calc(var(--rsm) - 2px);
+      display: flex; gap: 3px; overflow: hidden;
+    }
+    .swatch-dark  { background: #0b0b13; flex: 1; }
+    .swatch-card-dark { background: #17172a; flex: 2; }
+    .swatch-light { background: #f4f4f9; flex: 1; }
+    .swatch-card-light { background: #ffffff; flex: 2; border: 1px solid #dcdce8; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <span class="nav-logo">LEDGR</span>
+    <span class="nav-sub">Inventory</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>
+      Dashboard
+    </a>
+    <a href="inventory.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+      Inventory
+    </a>
+    <a href="lookup.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      Lookup
+    </a>
+    <a href="notifications.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+      Alerts
+      <span class="notif-badge" hidden></span>
+    </a>
+    <a href="settings.html" class="nav-link active">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+      Settings
+    </a>
+    <a href="settings.html" class="nav-avatar-btn" id="navAvatarWrap" title="Profile"></a>
+    <button class="btn-logout" onclick="logout()" title="Sign out">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/></svg>
+      <span>Sign out</span>
+    </button>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="settings-wrap">
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">Settings</h1>
+        <p class="page-sub">Profile, appearance, and notifications</p>
+      </div>
+    </header>
+
+    <!-- Profile -->
+    <div class="settings-section">
+      <div class="settings-section-header">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+        Profile
+      </div>
+      <div class="settings-body">
+        <div class="pic-wrap">
+          <div class="pic-preview" id="picPreview">👤</div>
+          <div class="pic-actions">
+            <button class="btn btn-ghost btn-sm" onclick="document.getElementById('picInput').click()">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-1.586a1 1 0 01-.707-.293l-1.121-1.121A2 2 0 0011.172 3H8.828a2 2 0 00-1.414.586L6.293 4.707A1 1 0 015.586 5H4zm6 9a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+              Upload photo
+            </button>
+            <button class="pic-remove" onclick="removePic()">Remove photo</button>
+          </div>
+          <input type="file" id="picInput" accept="image/*" style="display:none" onchange="handlePicUpload(event)">
+        </div>
+
+        <div class="settings-field">
+          <label for="displayName">Business / display name</label>
+          <input type="text" class="settings-input" id="displayName" placeholder="Your name or business">
+        </div>
+
+        <div class="settings-field">
+          <label for="whatsapp">WhatsApp number</label>
+          <input type="tel" class="settings-input" id="whatsapp" placeholder="+65 9123 4567 or +234 801 234 5678">
+          <div class="field-hint" id="waPreview"></div>
+        </div>
+
+        <div class="settings-field">
+          <label for="instagram">Instagram handle</label>
+          <input type="text" class="settings-input" id="instagram" placeholder="@yourhandle">
+          <div class="field-hint" id="igPreview"></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="saveProfile()">Save profile</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Change Password -->
+    <div class="settings-section">
+      <div class="settings-section-header">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clip-rule="evenodd"/></svg>
+        Change Password
+      </div>
+      <div class="settings-body">
+        <div class="settings-field">
+          <label for="currentPw">Current password</label>
+          <div class="pw-wrap-s">
+            <input type="password" class="settings-input" id="currentPw" placeholder="Enter current password" autocomplete="current-password">
+            <button type="button" class="toggle-pw-s" onclick="togglePwField('currentPw',this)" aria-label="Show/hide password">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="settings-field">
+          <label for="newPw">New password</label>
+          <div class="pw-wrap-s">
+            <input type="password" class="settings-input" id="newPw" placeholder="At least 8 characters" autocomplete="new-password" oninput="checkPwStrength(this.value)">
+            <button type="button" class="toggle-pw-s" onclick="togglePwField('newPw',this)" aria-label="Show/hide password">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+            </button>
+          </div>
+          <div class="pw-strength" id="pwStrengthBar">
+            <div class="pw-bar" id="pwBar1"></div>
+            <div class="pw-bar" id="pwBar2"></div>
+            <div class="pw-bar" id="pwBar3"></div>
+            <div class="pw-bar" id="pwBar4"></div>
+          </div>
+          <div class="pw-label" id="pwStrengthLabel"></div>
+        </div>
+        <div class="settings-field">
+          <label for="confirmPw">Confirm new password</label>
+          <div class="pw-wrap-s">
+            <input type="password" class="settings-input" id="confirmPw" placeholder="Re-enter new password" autocomplete="new-password">
+            <button type="button" class="toggle-pw-s" onclick="togglePwField('confirmPw',this)" aria-label="Show/hide password">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" id="changePwBtn" onclick="changePassword()">Update password</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Appearance -->
+    <div class="settings-section">
+      <div class="settings-section-header">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M4 2a2 2 0 00-2 2v11a3 3 0 106 0V4a2 2 0 00-2-2H4zm1 14a1 1 0 110-2 1 1 0 010 2zm5-1.757l4.9-4.9a2 2 0 000-2.828L13.485 5.1a2 2 0 00-2.828 0L10 5.757v8.486zM16 18H9.071l6-6H16a2 2 0 012 2v2a2 2 0 01-2 2z"/></svg>
+        Appearance
+      </div>
+      <div class="settings-body">
+        <div class="settings-field">
+          <label>Theme</label>
+          <div class="theme-btns">
+            <button class="theme-btn" id="btnDark" onclick="setTheme('dark')">
+              <div class="theme-swatch"><div class="swatch-dark"></div><div class="swatch-card-dark"></div></div>
+              Dark
+            </button>
+            <button class="theme-btn" id="btnLight" onclick="setTheme('light')">
+              <div class="theme-swatch"><div class="swatch-light"></div><div class="swatch-card-light"></div></div>
+              Light
+            </button>
+          </div>
+        </div>
+        <div class="settings-field">
+          <label>Font size</label>
+          <div class="font-size-btns" id="fontSizeBtns">
+            <button class="font-size-btn" data-size="small"  onclick="setFontSize('small')">A<span>Small</span></button>
+            <button class="font-size-btn" data-size="medium" onclick="setFontSize('medium')">A<span>Medium</span></button>
+            <button class="font-size-btn" data-size="large"  onclick="setFontSize('large')">A<span>Large</span></button>
+            <button class="font-size-btn" data-size="xlarge" onclick="setFontSize('xlarge')">A<span>X-Large</span></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Daily Email Report -->
+    <div class="settings-section">
+      <div class="settings-section-header">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+        Daily Email Report
+      </div>
+      <div class="settings-body">
+        <div class="settings-row">
+          <div>
+            <div class="settings-label">Enable daily report</div>
+            <div class="settings-hint">Sends an inventory summary email at your chosen time</div>
+          </div>
+          <label class="s-toggle">
+            <input type="checkbox" id="reportEnabled">
+            <span class="s-track"></span>
+            <span class="s-thumb"></span>
+          </label>
+        </div>
+        <div class="settings-field">
+          <label for="reportEmail">Report email address</label>
+          <input type="email" class="settings-input" id="reportEmail" placeholder="you@example.com">
+        </div>
+        <div class="settings-field">
+          <label for="reportTime">Send time (your local time)</label>
+          <input type="time" class="settings-input" id="reportTime">
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-primary" onclick="saveEmailSettings()">Save</button>
+          <button class="btn btn-ghost" onclick="sendDailyReport(true)">Send test report</button>
+        </div>
+        <div class="settings-note">
+          <strong>Note:</strong> Report fires while this tab is open. Keep a tab open at the scheduled time, or use the test button anytime. Requires <strong>RESEND_API_KEY</strong> in Vercel.
+        </div>
+      </div>
+    </div>
+
+    <!-- Instagram Sync -->
+    <div class="settings-section">
+      <div class="settings-section-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        Instagram Sync
+      </div>
+      <div class="settings-body">
+        <div id="igConnected" hidden>
+          <div class="settings-row" style="margin-bottom:.75rem">
+            <div>
+              <div class="settings-label" id="igUsername">Instagram Connected</div>
+              <div class="settings-hint" id="igExpires"></div>
+            </div>
+            <span style="color:var(--available);font-size:1.2rem;font-weight:700">&#10003;</span>
+          </div>
+          <!-- Sync date range filter -->
+          <div style="margin-bottom:.75rem">
+            <div class="settings-label" style="margin-bottom:.4rem;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text3)">Filter sync by date range</div>
+            <div style="display:flex;gap:.4rem;margin-bottom:.5rem;flex-wrap:wrap">
+              <input type="date" id="igSinceDate" class="date-input" style="flex:1;min-width:120px" title="From date">
+              <input type="date" id="igUntilDate" class="date-input" style="flex:1;min-width:120px" title="To date">
+            </div>
+            <div class="settings-label" style="margin-bottom:.4rem;font-size:.78rem;text-transform:uppercase;letter-spacing:.04em;color:var(--text3)">Filter by day of week</div>
+            <div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.5rem">
+              <button class="date-chip" data-dow="1" onclick="toggleIgDow(this)">Mon</button>
+              <button class="date-chip" data-dow="2" onclick="toggleIgDow(this)">Tue</button>
+              <button class="date-chip" data-dow="3" onclick="toggleIgDow(this)">Wed</button>
+              <button class="date-chip" data-dow="4" onclick="toggleIgDow(this)">Thu</button>
+              <button class="date-chip" data-dow="5" onclick="toggleIgDow(this)">Fri</button>
+              <button class="date-chip" data-dow="6" onclick="toggleIgDow(this)">Sat</button>
+              <button class="date-chip" data-dow="0" onclick="toggleIgDow(this)">Sun</button>
+            </div>
+          </div>
+          <div class="btn-row">
+            <button class="btn btn-primary btn-sm" onclick="syncWithIgFilter()">
+              <svg viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+              Sync Now
+            </button>
+            <button class="btn btn-ghost btn-sm" onclick="clearIgFilter()">Clear filter</button>
+            <button class="btn btn-danger btn-sm" onclick="disconnectInstagram()">Disconnect</button>
+          </div>
+        </div>
+        <div id="igNotConnected">
+          <p style="font-size:.875rem;color:var(--text2);margin:0 0 1rem">Connect your Instagram Business or Creator account. Posts with <code style="background:var(--surface);padding:.1em .35em;border-radius:3px;font-size:.82em">ITEM:</code> in the caption sync automatically as inventory items.</p>
+          <button class="btn btn-primary" onclick="connectInstagram()" id="igConnectBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+            Connect Instagram
+          </button>
+          <div class="settings-note" style="margin-top:1rem">
+            <strong>Note:</strong> Requires Meta App Review before accounts outside your app can connect. While in development mode, add test users under Roles &rarr; Test Users in your Meta app dashboard.
+          </div>
+        </div>
+
+        <!-- IG sync behaviour prefs -->
+        <div style="margin-top:1.25rem;border-top:1px solid var(--border);padding-top:1.25rem">
+          <div class="settings-row" style="margin-bottom:.75rem">
+            <div>
+              <div class="settings-label">Always update price from Instagram</div>
+              <div class="settings-hint">When syncing, overwrite the stored price with the latest price from the Instagram caption</div>
+            </div>
+            <label class="s-toggle">
+              <input type="checkbox" id="igUpdatePrice">
+              <span class="s-track"></span>
+              <span class="s-thumb"></span>
+            </label>
+          </div>
+          <div class="settings-row">
+            <div>
+              <div class="settings-label">Always update caption from Instagram</div>
+              <div class="settings-hint">When syncing, overwrite item name and notes with the latest Instagram caption</div>
+            </div>
+            <label class="s-toggle">
+              <input type="checkbox" id="igUpdateCaption">
+              <span class="s-track"></span>
+              <span class="s-thumb"></span>
+            </label>
+          </div>
+          <div class="btn-row" style="margin-top:1rem">
+            <button class="btn btn-primary" onclick="saveIgPrefs()">Save sync settings</button>
+            <button class="btn btn-danger btn-sm" onclick="clearIgItemsAndResync()" title="Remove all IG-sourced items and re-sync from scratch">Clear IG items &amp; re-sync</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account -->
+    <div class="settings-section">
+      <div class="settings-section-header">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clip-rule="evenodd"/></svg>
+        Account
+      </div>
+      <div class="settings-body">
+        <div class="acct-row">
+          <span class="acct-label">Sign-in method</span>
+          <span class="acct-val" id="acctMethod">—</span>
+        </div>
+        <div class="acct-row">
+          <span class="acct-label">Identifier</span>
+          <span class="acct-val" id="acctIdentifier">—</span>
+        </div>
+        <div style="margin-top:1rem">
+          <button class="btn btn-danger" style="width:100%" onclick="showDialog('Sign out','Sign out of Ledgr on this device?',logout,'Sign out')">Sign out of this device</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<script src="ledgr.js"></script>
+<script>
+  checkAuth();
+  refreshNavBadge();
+  refreshNavAvatar();
+
+  let currentPic = null;
+
+  // Load profile
+  const profile = getProfile();
+  if (profile.pic) { currentPic = profile.pic; showPicPreview(profile.pic); }
+  document.getElementById('displayName').value = profile.displayName || '';
+  document.getElementById('whatsapp').value    = profile.whatsapp    || '';
+  document.getElementById('instagram').value   = profile.instagram   || '';
+  updateWaPreview(profile.whatsapp || '');
+  updateIgPreview(profile.instagram || '');
+
+  // Load email prefs
+  const prefs = getPrefs();
+  document.getElementById('reportEnabled').checked = !!prefs.reportEnabled;
+  document.getElementById('reportEmail').value     = prefs.reportEmail || '';
+  document.getElementById('reportTime').value      = prefs.reportTime  || '08:00';
+
+  // Load theme
+  updateThemeButtons(prefs.theme || 'dark');
+
+  // Load font size
+  updateFontSizeButtons(prefs.fontSize || 'medium');
+
+  // Load IG prefs
+  document.getElementById('igUpdatePrice').checked   = !!prefs.igUpdatePrice;
+  document.getElementById('igUpdateCaption').checked = !!prefs.igUpdateCaption;
+
+  // Load account
+  const auth = getAuth();
+  if (auth) {
+    const method = auth.method || (auth.username ? 'username' : 'unknown');
+    document.getElementById('acctMethod').textContent     = method.charAt(0).toUpperCase() + method.slice(1);
+    document.getElementById('acctIdentifier').textContent = auth.identifier || auth.username || '—';
+  }
+
+  // Profile picture
+  function showPicPreview(src) {
+    const el = document.getElementById('picPreview');
+    if (src) {
+      el.innerHTML = `<img src="${src}" alt="Profile">`;
+    } else {
+      el.innerHTML = '👤';
+    }
+  }
+
+  function handlePicUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const size = 200;
+        const scale = Math.min(size / img.width, size / img.height, 1);
+        canvas.width  = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        currentPic = canvas.toDataURL('image/jpeg', 0.82);
+        showPicPreview(currentPic);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function removePic() {
+    currentPic = null;
+    showPicPreview(null);
+    document.getElementById('picInput').value = '';
+  }
+
+  function saveProfile() {
+    setProfile({
+      displayName: document.getElementById('displayName').value.trim(),
+      whatsapp:    document.getElementById('whatsapp').value.trim(),
+      instagram:   document.getElementById('instagram').value.trim().replace(/^@/, ''),
+      pic:         currentPic || null,
+    });
+    refreshNavAvatar();
+    showToast('Profile saved', 'success');
+  }
+
+  // WhatsApp live preview
+  document.getElementById('whatsapp').addEventListener('input', e => updateWaPreview(e.target.value));
+  function updateWaPreview(val) {
+    const num = val.replace(/[^0-9]/g, '');
+    const el = document.getElementById('waPreview');
+    if (num.length > 5) {
+      el.innerHTML = `<a href="https://wa.me/${num}" target="_blank">wa.me/${num} ↗</a>`;
+    } else { el.innerHTML = ''; }
+  }
+
+  // Instagram live preview
+  document.getElementById('instagram').addEventListener('input', e => updateIgPreview(e.target.value));
+  function updateIgPreview(val) {
+    const handle = val.trim().replace(/^@/, '');
+    const el = document.getElementById('igPreview');
+    if (handle) {
+      el.innerHTML = `<a href="https://instagram.com/${handle}" target="_blank" style="color:#c13584">instagram.com/${handle} ↗</a>`;
+    } else { el.innerHTML = ''; }
+  }
+
+  // Theme
+  function setTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    const p = getPrefs();
+    setPrefs({ ...p, theme });
+    updateThemeButtons(theme);
+  }
+  function updateThemeButtons(theme) {
+    document.getElementById('btnDark').classList.toggle('active', theme === 'dark');
+    document.getElementById('btnLight').classList.toggle('active', theme === 'light');
+  }
+
+  // Email report
+  function saveEmailSettings() {
+    const p = getPrefs();
+    setPrefs({
+      ...p,
+      reportEnabled: document.getElementById('reportEnabled').checked,
+      reportEmail:   document.getElementById('reportEmail').value.trim(),
+      reportTime:    document.getElementById('reportTime').value,
+    });
+    showToast('Saved', 'success');
+  }
+
+  // ─── Instagram OAuth ──────────────────────────────────────────────────────────────────────────
+  (function handleIgCallback() {
+    const hash = window.location.hash.slice(1);
+    if (!hash) return;
+    const params = new URLSearchParams(hash);
+    history.replaceState(null, '', window.location.pathname);
+    const igError = params.get('ig_error');
+    if (igError) {
+      setTimeout(() => showToast('Instagram: ' + decodeURIComponent(igError).replace(/_/g, ' '), 'error'), 100);
+      return;
+    }
+    const token    = params.get('ig_token');
+    const userId   = params.get('ig_user_id');
+    const username = params.get('ig_username');
+    const expires  = params.get('ig_expires');
+    if (token && userId) {
+      setIgConnection({ token, userId, username, expires: Number(expires) });
+      setTimeout(() => { showToast('Instagram connected!', 'success'); renderIgSection(); }, 100);
+    }
+  })();
+
+  function renderIgSection() {
+    const conn    = getIgConnection();
+    const connEl  = document.getElementById('igConnected');
+    const nconnEl = document.getElementById('igNotConnected');
+    if (!connEl || !nconnEl) return;
+    if (conn) {
+      connEl.hidden  = false;
+      nconnEl.hidden = true;
+      document.getElementById('igUsername').textContent = conn.username ? '@' + conn.username : 'Instagram Connected';
+      const expiresEl = document.getElementById('igExpires');
+      if (conn.expires) {
+        const days = Math.max(0, Math.round((conn.expires - Date.now()) / 86400000));
+        expiresEl.textContent = days > 0
+          ? `Token expires in ${days} day${days !== 1 ? 's' : ''}`
+          : 'Token expired — reconnect';
+      }
+    } else {
+      connEl.hidden  = true;
+      nconnEl.hidden = false;
+    }
+  }
+
+  async function connectInstagram() {
+    const btn = document.getElementById('igConnectBtn');
+    const originalHTML = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = 'Loading…';
+    try {
+      const res  = await fetch('/api/ig-auth-url');
+      const data = await res.json();
+      if (!data.configured || !data.url) {
+        showToast('Instagram not configured — add IG_APP_ID, IG_APP_SECRET, IG_REDIRECT_URI to Vercel', 'error');
+        return;
+      }
+      window.location.href = data.url;
+    } catch {
+      showToast('Could not start Instagram login', 'error');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalHTML;
+    }
+  }
+
+  function disconnectInstagram() {
+    showDialog('Disconnect Instagram', 'Remove your Instagram connection from this device?', () => {
+      clearIgConnection();
+      renderIgSection();
+      showToast('Instagram disconnected', 'info');
+    }, 'Disconnect');
+  }
+
+  renderIgSection();
+
+  // Font size
+  function setFontSize(size) {
+    document.documentElement.dataset.fontSize = size;
+    const p = getPrefs();
+    setPrefs({ ...p, fontSize: size });
+    updateFontSizeButtons(size);
+  }
+  function updateFontSizeButtons(size) {
+    document.querySelectorAll('.font-size-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.size === size);
+    });
+  }
+
+  // ─── Change Password ─────────────────────────────────────────────────────────
+  async function sha256(text) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ledgr:' + text));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+
+  function togglePwField(id, btn) {
+    const input = document.getElementById(id);
+    const showing = input.type === 'text';
+    input.type = showing ? 'password' : 'text';
+    btn.querySelector('svg').innerHTML = showing
+      ? '<path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>'
+      : '<path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/><path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.064 7 9.542 7 .847 0 1.669-.105 2.454-.303z"/>';
+  }
+
+  function pwScore(pw) {
+    let score = 0;
+    if (pw.length >= 8)  score++;
+    if (pw.length >= 12) score++;
+    if (/[A-Z]/.test(pw) && /[a-z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^A-Za-z0-9]/.test(pw)) score++;
+    return Math.min(4, score);
+  }
+
+  function checkPwStrength(val) {
+    const bars  = [1,2,3,4].map(i => document.getElementById('pwBar' + i));
+    const label = document.getElementById('pwStrengthLabel');
+    if (!val) { bars.forEach(b => b.className = 'pw-bar'); label.textContent = ''; return; }
+    const s = pwScore(val);
+    const levels = ['', 'Weak', 'Fair', 'Good', 'Strong'];
+    const cls    = ['', 'fill-weak', 'fill-fair', 'fill-strong', 'fill-strong'];
+    bars.forEach((b, i) => { b.className = 'pw-bar' + (i < s ? ' ' + cls[s] : ''); });
+    label.textContent = levels[s] || '';
+    label.style.color = s <= 1 ? 'var(--danger)' : s <= 2 ? 'var(--sold)' : 'var(--available)';
+  }
+
+  async function changePassword() {
+    const currentVal = document.getElementById('currentPw').value;
+    const newVal     = document.getElementById('newPw').value;
+    const confirmVal = document.getElementById('confirmPw').value;
+
+    if (!currentVal) { showToast('Enter your current password', 'error'); return; }
+    if (!newVal)     { showToast('Enter a new password', 'error'); return; }
+    if (newVal.length < 8) { showToast('New password must be at least 8 characters', 'error'); return; }
+    if (newVal !== confirmVal) { showToast('Passwords don\'t match', 'error'); return; }
+    if (newVal === currentVal) { showToast('New password must be different', 'error'); return; }
+
+    const btn = document.getElementById('changePwBtn');
+    btn.disabled = true;
+    btn.textContent = 'Updating…';
+
+    try {
+      const auth    = getAuth();
+      if (!auth) { showToast('No account found — please sign in again', 'error'); return; }
+
+      const currentHash = await sha256(currentVal);
+      if (currentHash !== auth.hash) {
+        showToast('Current password is incorrect', 'error');
+        document.getElementById('currentPw').value = '';
+        document.getElementById('currentPw').focus();
+        return;
+      }
+
+      const newHash  = await sha256(newVal);
+      const newToken = Date.now().toString(36) + Math.random().toString(36).slice(2, 9);
+      const updated  = { ...auth, hash: newHash, token: newToken };
+      localStorage.setItem('ledgr_auth', JSON.stringify(updated));
+
+      // Re-stamp the active session so the user stays logged in
+      sessionStorage.setItem('ledgr_token', newToken);
+      if (localStorage.getItem('ledgr_token_r')) {
+        localStorage.setItem('ledgr_token_r', newToken);
+      }
+
+      document.getElementById('currentPw').value = '';
+      document.getElementById('newPw').value      = '';
+      document.getElementById('confirmPw').value  = '';
+      checkPwStrength('');
+      showToast('Password updated successfully', 'success');
+    } finally {
+      btn.disabled    = false;
+      btn.textContent = 'Update password';
+    }
+  }
+
+
+  // ─── IG sync date/DOW filter ─────────────────────────────────────────────────
+  function toggleIgDow(btn) {
+    btn.classList.toggle('active');
+  }
+
+  function clearIgFilter() {
+    document.getElementById('igSinceDate').value = '';
+    document.getElementById('igUntilDate').value = '';
+    document.querySelectorAll('.date-chip[data-dow]').forEach(b => b.classList.remove('active'));
+  }
+
+  async function syncWithIgFilter() {
+    const sinceVal = document.getElementById('igSinceDate').value;
+    const untilVal = document.getElementById('igUntilDate').value;
+    const activeDow = [...document.querySelectorAll('.date-chip[data-dow].active')]
+      .map(b => parseInt(b.dataset.dow));
+
+    const opts = {};
+    if (sinceVal) opts.since = Math.floor(new Date(sinceVal + 'T00:00:00').getTime() / 1000);
+    if (untilVal) opts.until = Math.floor(new Date(untilVal + 'T23:59:59').getTime() / 1000);
+    if (activeDow.length) opts.days = activeDow;
+
+    await syncFromInstagram(true, opts);
+  }
+
+  function clearIgItemsAndResync() {
+    const igCount = getItems().filter(i => i.source === 'instagram').length;
+    showDialog(
+      'Clear IG items & re-sync',
+      `This will delete all ${igCount} Instagram-sourced item${igCount !== 1 ? 's' : ''} from your inventory and run a fresh sync. Manually added items are NOT affected. Continue?`,
+      async () => {
+        const kept = getItems().filter(i => i.source !== 'instagram');
+        setItems(kept);
+        localStorage.removeItem('ledgr_ig_sync'); // reset last-sync timestamp
+        showToast(`Cleared ${igCount} IG item${igCount !== 1 ? 's' : ''}. Syncing…`, 'info');
+        await syncFromInstagram(true);
+      },
+      'Clear & re-sync'
+    );
+  }
+
+  // IG sync prefs
+  function saveIgPrefs() {
+    const p = getPrefs();
+    setPrefs({
+      ...p,
+      igUpdatePrice:   document.getElementById('igUpdatePrice').checked,
+      igUpdateCaption: document.getElementById('igUpdateCaption').checked,
+    });
+    showToast('Sync settings saved', 'success');
+  }
+</script>
+</body>
+</html>

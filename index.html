@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ledgr — Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .dash-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 1.5rem;
+      align-items: start;
+    }
+    .activity-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--r); overflow: hidden;
+    }
+    .activity-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      font-size: .875rem; font-weight: 600;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .activity-list { padding: .5rem 0; }
+    .activity-row {
+      display: flex; align-items: flex-start; gap: .85rem;
+      padding: .7rem 1.25rem;
+      transition: background .15s; cursor: default;
+    }
+    .activity-row:hover { background: rgba(255,255,255,.025); }
+    .activity-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      margin-top: 5px; flex-shrink: 0;
+    }
+    .dot-listed    { background: var(--listed); }
+    .dot-available { background: var(--available); }
+    .dot-sold      { background: var(--sold); }
+    .activity-name { font-size: .8125rem; font-weight: 500; margin-bottom: .15rem; }
+    .activity-meta { font-size: .72rem; color: var(--text3); }
+    @media (max-width: 900px) {
+      .dash-grid { grid-template-columns: 1fr; }
+    }
+    .today-date {
+      font-size: .75rem; font-weight: 600; letter-spacing: .07em;
+      text-transform: uppercase; color: var(--gold);
+      background: var(--gold-dim); border: 1px solid rgba(201,168,76,.2);
+      border-radius: 99px; padding: .2rem .75rem; display: inline-block;
+      margin-bottom: .35rem;
+    }
+    .alltime-bar {
+      display: flex; flex-wrap: wrap; gap: .35rem 1.5rem;
+      padding: .85rem 1.25rem;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--rsm); font-size: .78rem; color: var(--text2);
+      margin-top: 1.25rem;
+    }
+    .alltime-bar span { color: var(--text); font-weight: 600; }
+    .alltime-label { color: var(--text3); font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; margin-right: .25rem; }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <span class="nav-logo">LEDGR</span>
+    <span class="nav-sub">Inventory</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link active">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>
+      Dashboard
+    </a>
+    <a href="inventory.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+      Inventory
+    </a>
+    <a href="lookup.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      Lookup
+    </a>
+    <a href="notifications.html" class="nav-link" id="notifLink">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+      Alerts
+      <span class="notif-badge" hidden></span>
+    </a>
+    <a href="settings.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+      Settings
+    </a>
+    <a href="settings.html" class="nav-avatar-btn" id="navAvatarWrap" title="Profile"></a>
+    <button class="btn-logout" onclick="logout()" title="Sign out">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/></svg>
+      <span>Sign out</span>
+    </button>
+  </div>
+</nav>
+
+<main class="main">
+  <header class="page-header">
+    <div>
+      <div class="today-date" id="todayLabel"></div>
+      <h1 class="page-title">Today's Activity</h1>
+      <p class="page-sub" id="todaySub"></p>
+    </div>
+    <a href="add.html" class="btn btn-primary">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+      Add Item
+    </a>
+  </header>
+
+  <div class="stats-grid" id="statsGrid"></div>
+
+  <div class="dash-grid">
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">Today's Items</h2>
+        <a href="inventory.html" class="link-more">View all →</a>
+      </div>
+      <div class="items-grid" id="recentItems"></div>
+      <div class="alltime-bar" id="alltimeBar" hidden></div>
+    </section>
+
+    <aside>
+      <div class="activity-card">
+        <div class="activity-header">
+          <span>Activity Feed</span>
+          <a href="notifications.html" class="link-more" style="font-size:.75rem">See all</a>
+        </div>
+        <div class="activity-list" id="activityList"></div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script src="ledgr.js"></script>
+<script>
+  checkAuth();
+  initTheme();
+  refreshNavAvatar();
+  startInstagramSync();
+  startReportScheduler();
+  refreshNavBadge();
+
+  // ─── Today helpers ───────────────────────────────────────────────────────────
+  function isToday(dateStr) {
+    if (!dateStr) return false;
+    const d = new Date(dateStr), t = new Date();
+    return d.getFullYear() === t.getFullYear() &&
+           d.getMonth()    === t.getMonth()    &&
+           d.getDate()     === t.getDate();
+  }
+
+  function todayItems() {
+    return getItems().filter(i => isToday(i.createdAt) || isToday(i.updatedAt));
+  }
+
+  function renderHeader() {
+    const now = new Date();
+    document.getElementById('todayLabel').textContent = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const td = todayItems();
+    document.getElementById('todaySub').textContent =
+      td.length ? `${td.length} item${td.length !== 1 ? 's' : ''} added or updated today` : 'No items touched today';
+  }
+
+  function renderStats() {
+    const td      = todayItems();
+    const added   = td.filter(i => isToday(i.createdAt)).length;
+    const updated = td.filter(i => !isToday(i.createdAt) && isToday(i.updatedAt)).length;
+    const sold    = td.filter(i => i.status === 'sold').length;
+    const revenue = td.filter(i => i.status === 'sold').reduce((s, i) => s + (Number(i.sellersAmount) || 0), 0);
+    const margin  = td.filter(i => i.status === 'sold').reduce((s, i) => {
+      const sale = Number(i.sellersAmount) || 0;
+      const cost = Number(i.costPrice) || 0;
+      return s + (cost > 0 ? sale - cost : (Number(i.sgdMargin) || 0));
+    }, 0);
+
+    document.getElementById('statsGrid').innerHTML = `
+      <div class="stat-card c-list">
+        <div class="stat-label">Added Today</div>
+        <div class="stat-value">${added}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Updated Today</div>
+        <div class="stat-value">${updated}</div>
+      </div>
+      <div class="stat-card c-sold">
+        <div class="stat-label">Sold Today</div>
+        <div class="stat-value">${sold}</div>
+      </div>
+      <div class="stat-card c-gold">
+        <div class="stat-label">Today's Revenue</div>
+        <div class="stat-value" style="font-size:1.25rem">${formatAmount(revenue, 'NGN')}</div>
+      </div>
+      <div class="stat-card c-gold">
+        <div class="stat-label">Today's Profit</div>
+        <div class="stat-value" style="font-size:1.25rem">${formatAmount(margin, 'NGN')}</div>
+      </div>
+    `;
+  }
+
+  function renderRecent() {
+    const td = todayItems();
+    const el = document.getElementById('recentItems');
+    const barEl = document.getElementById('alltimeBar');
+
+    if (!td.length) {
+      el.innerHTML = `<div class="empty">
+        <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>
+        <h3>Nothing yet today</h3>
+        <p>Items you add or update today will appear here.</p>
+        <a href="inventory.html" class="btn btn-ghost" style="margin-top:.75rem">View all inventory →</a>
+      </div>`;
+    } else {
+      el.innerHTML = td.map(i => renderCard(i)).join('');
+    }
+
+    // All-time summary bar
+    const s = getStats();
+    barEl.hidden = false;
+    barEl.innerHTML =
+      `<span><span class="alltime-label">All time —</span></span>` +
+      `<span><span class="alltime-label">Total</span><span>${s.total}</span></span>` +
+      `<span><span class="alltime-label">Listed</span><span>${s.listed}</span></span>` +
+      `<span><span class="alltime-label">Available</span><span>${s.available}</span></span>` +
+      `<span><span class="alltime-label">Sold</span><span>${s.sold}</span></span>` +
+      `<span><span class="alltime-label">Revenue</span><span>${formatAmount(s.revenue, 'NGN')}</span></span>` +
+      `<span><span class="alltime-label">Profit</span><span>${formatAmount(s.profit, 'NGN')}</span></span>`;
+  }
+
+  function renderActivity() {
+    const notifs = getNotifications().slice(0, 8);
+    const items  = getItems().slice(0, 8);
+    const el = document.getElementById('activityList');
+    if (!notifs.length && !items.length) {
+      el.innerHTML = `<p style="padding:1rem 1.25rem;font-size:.8125rem;color:var(--text3)">No activity yet.</p>`;
+      return;
+    }
+    const feed = notifs.length
+      ? notifs.map(n => `
+          <div class="activity-row">
+            <div class="activity-dot dot-${n.type === 'new_item' ? 'listed' : 'sold'}"></div>
+            <div>
+              <div class="activity-name">${esc(n.message)}</div>
+              <div class="activity-meta">${timeAgo(n.createdAt)}</div>
+            </div>
+          </div>`)
+      : items.map(i => `
+          <div class="activity-row">
+            <div class="activity-dot dot-${i.status}"></div>
+            <div>
+              <div class="activity-name">${esc(i.name)}</div>
+              <div class="activity-meta">${cap(i.status)} · ${timeAgo(i.updatedAt)}</div>
+            </div>
+          </div>`);
+    el.innerHTML = feed.join('');
+  }
+
+  function onStatsChange() { renderHeader(); renderStats(); renderRecent(); renderActivity(); }
+
+  renderHeader();
+  renderStats();
+  renderRecent();
+  renderActivity();
+</script>
+</body>
+</html>

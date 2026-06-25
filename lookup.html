@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ledgr — Item Lookup</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .lookup-wrap {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 3rem 1rem 2rem;
+    }
+    .lookup-hero {
+      text-align: center;
+      margin-bottom: 2.5rem;
+    }
+    .lookup-icon {
+      width: 52px; height: 52px;
+      background: var(--gold-dim);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 1rem;
+      color: var(--gold);
+    }
+    .lookup-title { font-size: 1.5rem; font-weight: 700; margin-bottom: .35rem; }
+    .lookup-sub   { font-size: .875rem; color: var(--text2); }
+
+    .search-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      padding: 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .ref-input-wrap {
+      display: flex; gap: .6rem;
+    }
+    .ref-input {
+      flex: 1;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--rsm); padding: .7rem 1rem;
+      color: var(--text); font-size: .9375rem; font-family: 'SF Mono','Consolas',monospace;
+      outline: none; transition: border-color .15s;
+      letter-spacing: .03em;
+    }
+    .ref-input:focus { border-color: var(--gold); }
+    .ref-input::placeholder { color: var(--text3); font-family: inherit; letter-spacing: 0; }
+    .btn-lookup {
+      background: var(--gold); color: #0b0b13; border: none;
+      border-radius: var(--rsm); padding: .7rem 1.25rem;
+      font-size: .875rem; font-weight: 700; font-family: inherit;
+      cursor: pointer; transition: opacity .15s; white-space: nowrap;
+      display: flex; align-items: center; gap: .4rem;
+    }
+    .btn-lookup:hover { opacity: .88; }
+    .search-hint {
+      font-size: .75rem; color: var(--text3);
+      margin-top: .75rem; line-height: 1.5;
+    }
+
+    /* Result */
+    .result-card {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--r); overflow: hidden;
+      display: none;
+    }
+    .result-card.show { display: block; animation: fadeUp .25s ease both; }
+    .result-bar { height: 4px; }
+    .result-body { padding: 1.5rem; }
+    .result-top {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .result-name { font-size: 1.1rem; font-weight: 700; line-height: 1.3; }
+    .result-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: .75rem 1.25rem;
+      padding-top: 1.1rem;
+      border-top: 1px solid var(--border);
+    }
+    .result-field label {
+      display: block; font-size: .62rem; font-weight: 700;
+      letter-spacing: .08em; text-transform: uppercase;
+      color: var(--text3); margin-bottom: .2rem;
+    }
+    .result-field span {
+      font-size: .875rem; font-weight: 500; color: var(--text2);
+      font-family: 'SF Mono','Consolas',monospace;
+    }
+    .result-field span.plain { font-family: inherit; }
+    .result-notes {
+      margin-top: 1rem; padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: .8125rem; color: var(--text2); line-height: 1.5;
+    }
+    .result-notes strong { color: var(--text3); font-size: .65rem; text-transform: uppercase; letter-spacing: .07em; display: block; margin-bottom: .25rem; }
+
+    /* No result */
+    .no-result {
+      text-align: center; padding: 2.5rem 1.5rem;
+      display: none;
+    }
+    .no-result.show { display: block; animation: fadeUp .2s ease both; }
+    .no-result svg  { color: var(--text3); margin-bottom: .75rem; }
+    .no-result h3   { font-size: 1rem; margin-bottom: .35rem; }
+    .no-result p    { font-size: .8125rem; color: var(--text2); }
+
+    @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+  </style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <span class="nav-logo">LEDGR</span>
+    <span class="nav-sub">Inventory</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>
+      Dashboard
+    </a>
+    <a href="inventory.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+      Inventory
+    </a>
+    <a href="lookup.html" class="nav-link active">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      Lookup
+    </a>
+    <a href="notifications.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+      Alerts
+      <span class="notif-badge" hidden></span>
+    </a>
+    <a href="settings.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+      Settings
+    </a>
+    <a href="settings.html" class="nav-avatar-btn" id="navAvatarWrap" title="Profile"></a>
+    <button class="btn-logout" onclick="logout()" title="Sign out">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/></svg>
+      <span>Sign out</span>
+    </button>
+  </div>
+</nav>
+
+<main class="main">
+  <div class="lookup-wrap">
+    <div class="lookup-hero">
+      <div class="lookup-icon">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="24" height="24"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      </div>
+      <h1 class="lookup-title">Item Status Lookup</h1>
+      <p class="lookup-sub">Paste a reference number to check the current status of an item</p>
+    </div>
+
+    <div class="search-card">
+      <div class="ref-input-wrap">
+        <input
+          type="text"
+          class="ref-input"
+          id="refInput"
+          placeholder="e.g. SGDMAR25-001 or BUY-042"
+          autocomplete="off"
+          spellcheck="false"
+        >
+        <button class="btn-lookup" onclick="doLookup()">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+          Search
+        </button>
+      </div>
+      <p class="search-hint">Searches seller reference, buyer reference, and item name. Case-insensitive.</p>
+    </div>
+
+    <div class="result-card" id="resultCard">
+      <div class="result-bar" id="resultBar"></div>
+      <div class="result-body">
+        <div class="result-top">
+          <div>
+            <span class="status-badge" id="resultBadge"></span>
+            <div class="result-name" id="resultName" style="margin-top:.5rem"></div>
+          </div>
+        </div>
+        <div class="result-grid">
+          <div class="result-field">
+            <label>Seller Ref</label>
+            <span id="resultSellerRef">—</span>
+          </div>
+          <div class="result-field">
+            <label>Buyer Ref</label>
+            <span id="resultBuyerRef">—</span>
+          </div>
+          <div class="result-field">
+            <label>Cost</label>
+            <span id="resultAmount">—</span>
+          </div>
+          <div class="result-field">
+            <label>Last Updated</label>
+            <span class="plain" id="resultUpdated">—</span>
+          </div>
+        </div>
+        <div class="result-notes" id="resultNotes" style="display:none">
+          <strong>Notes</strong>
+          <span id="resultNotesText"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="no-result" id="noResult">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="40" height="40"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      <h3>No item found</h3>
+      <p>No item matched that reference number. Check the spelling and try again.</p>
+    </div>
+  </div>
+</main>
+
+<script src="ledgr.js"></script>
+<script>
+  checkAuth();
+  initTheme();
+  refreshNavAvatar();
+  refreshNavBadge();
+
+  const STATUS_COLORS = {
+    listed:    'var(--listed)',
+    available: 'var(--available)',
+    sold:      'var(--sold)',
+  };
+
+  document.getElementById('refInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') doLookup();
+  });
+
+  // Auto-run if ?ref= is in the URL
+  (function() {
+    const params = new URLSearchParams(location.search);
+    const ref = params.get('ref');
+    if (ref) {
+      document.getElementById('refInput').value = ref;
+      doLookup();
+    }
+  })();
+
+  function doLookup() {
+    const query = document.getElementById('refInput').value.trim();
+    document.getElementById('resultCard').classList.remove('show');
+    document.getElementById('noResult').classList.remove('show');
+    if (!query) return;
+
+    const q = query.toLowerCase();
+    const items = getItems();
+    const item  = items.find(i =>
+      (i.sellerRef || '').toLowerCase() === q ||
+      (i.buyerRef  || '').toLowerCase() === q ||
+      i.id.toLowerCase() === q ||
+      (i.sellerRef || '').toLowerCase().includes(q) ||
+      (i.buyerRef  || '').toLowerCase().includes(q) ||
+      i.name.toLowerCase().includes(q)
+    );
+
+    if (!item) {
+      document.getElementById('noResult').classList.add('show');
+      return;
+    }
+
+    // Populate result
+    document.getElementById('resultBar').style.background   = STATUS_COLORS[item.status] || 'var(--gold)';
+    document.getElementById('resultBadge').className        = `status-badge badge-${item.status}`;
+    document.getElementById('resultBadge').textContent      = cap(item.status);
+    document.getElementById('resultName').textContent       = item.name;
+    document.getElementById('resultSellerRef').textContent  = item.sellerRef || '—';
+    document.getElementById('resultBuyerRef').textContent   = item.buyerRef  || '—';
+    document.getElementById('resultAmount').textContent     = formatAmount(item.sellersAmount, item.sellersCurrency || 'SGD');
+    document.getElementById('resultUpdated').textContent    = timeAgo(item.updatedAt || item.createdAt);
+
+    const notesEl  = document.getElementById('resultNotes');
+    const notesText = document.getElementById('resultNotesText');
+    if (item.notes) {
+      notesText.textContent = item.notes;
+      notesEl.style.display = '';
+    } else {
+      notesEl.style.display = 'none';
+    }
+
+    document.getElementById('resultCard').classList.add('show');
+  }
+</script>
+</body>
+</html>

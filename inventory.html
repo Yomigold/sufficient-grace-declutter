@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ledgr — Inventory</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <span class="nav-logo">LEDGR</span>
+    <span class="nav-sub">Inventory</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>
+      Dashboard
+    </a>
+    <a href="inventory.html" class="nav-link active">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+      Inventory
+    </a>
+    <a href="lookup.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      Lookup
+    </a>
+    <a href="notifications.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+      Alerts
+      <span class="notif-badge" hidden></span>
+    </a>
+    <a href="settings.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+      Settings
+    </a>
+    <a href="settings.html" class="nav-avatar-btn" id="navAvatarWrap" title="Profile"></a>
+    <button class="btn-logout" onclick="logout()" title="Sign out">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/></svg>
+      <span>Sign out</span>
+    </button>
+  </div>
+</nav>
+
+<main class="main">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Inventory</h1>
+      <p class="page-sub" id="countLine">Loading…</p>
+    </div>
+    <a href="add.html" class="btn btn-primary">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/></svg>
+      Add Item
+    </a>
+  </header>
+
+  <div class="inventory-toolbar">
+    <div class="filter-tabs" id="filterTabs">
+      <button class="filter-tab active" data-filter="all">All</button>
+      <button class="filter-tab" data-filter="listed">Listed <span class="group-count" id="cntListed">0</span></button>
+      <button class="filter-tab" data-filter="available">Available <span class="group-count" id="cntAvail">0</span></button>
+      <button class="filter-tab" data-filter="sold">Sold <span class="group-count" id="cntSold">0</span></button>
+    </div>
+    <div class="search-bar">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      <input type="search" id="searchInput" placeholder="Search items…" autocomplete="off">
+    </div>
+    <div class="toolbar-right">
+      <button class="btn btn-sm btn-ghost" id="dateFilterBtn" onclick="toggleDateFilter()" title="Filter by date">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clip-rule="evenodd"/></svg>
+        Date
+      </button>
+      <button class="btn btn-sm btn-ghost" onclick="openIgSync()" title="Sync from Instagram">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        IG Sync
+      </button>
+      <select id="sortSelect" class="form-control" style="font-size:.8rem;padding:.35rem .55rem;height:auto;width:auto;min-width:130px">
+        <option value="newest">Newest first</option>
+        <option value="oldest">Oldest first</option>
+        <option value="price-desc">Price: high → low</option>
+        <option value="price-asc">Price: low → high</option>
+        <option value="name-asc">Name: A → Z</option>
+      </select>
+      <div class="view-toggle">
+        <button class="view-btn active" id="btnSlides" title="Slides view" onclick="setView('slides')">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M3 4a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H4a1 1 0 01-1-1v-4zm8-8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V4zm0 8a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z"/></svg>
+        </button>
+        <button class="view-btn" id="btnGrid" title="Grid view" onclick="setView('grid')">
+          <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2zm0 6a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1v-2z" clip-rule="evenodd"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Date filter panel -->
+  <div id="dateFilterPanel" style="display:none">
+    <div class="date-filter-row">
+      <div class="date-filter-quick">
+        <button class="date-chip" onclick="setQuickDate('today')">Today</button>
+        <button class="date-chip" onclick="setQuickDate('week')">This week</button>
+        <button class="date-chip" onclick="setQuickDate('month')">This month</button>
+        <button class="date-chip" onclick="setQuickDate('year')">This year</button>
+      </div>
+      <div class="date-filter-inputs">
+        <div class="date-input-wrap">
+          <label class="date-input-label">From</label>
+          <input type="date" class="date-input" id="dateFrom" onchange="applyDateFilter()">
+        </div>
+        <span class="date-filter-sep">→</span>
+        <div class="date-input-wrap">
+          <label class="date-input-label">To</label>
+          <input type="date" class="date-input" id="dateTo" onchange="applyDateFilter()">
+        </div>
+        <button class="btn btn-sm btn-ghost" id="dateClearBtn" onclick="clearDateFilter()" style="display:none">Clear</button>
+      </div>
+    </div>
+    <div id="dateFilterSummary" style="display:none" class="date-filter-summary"></div>
+  </div>
+
+  <div id="inventoryContent"></div>
+</main>
+
+<!-- Instagram date-range sync modal -->
+<div class="modal-overlay" id="igSyncOverlay" onclick="if(event.target===this)closeIgSync()">
+  <div class="modal-sheet">
+    <div class="modal-header">
+      <span class="modal-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        Sync from Instagram
+      </span>
+      <button class="modal-close" onclick="closeIgSync()">✕</button>
+    </div>
+    <p class="modal-desc">Choose a date range to pull posts from your Instagram. Optionally filter by specific days of the week.</p>
+    <div class="ig-date-row">
+      <label class="ig-date-label">From</label>
+      <div class="ig-date-selects">
+        <select class="form-control" id="igFromDay" style="width:64px"></select>
+        <select class="form-control" id="igFromMonth"></select>
+        <select class="form-control" id="igFromYear" style="width:86px"></select>
+      </div>
+    </div>
+    <div class="ig-date-row">
+      <label class="ig-date-label">To</label>
+      <div class="ig-date-selects">
+        <select class="form-control" id="igToDay" style="width:64px"></select>
+        <select class="form-control" id="igToMonth"></select>
+        <select class="form-control" id="igToYear" style="width:86px"></select>
+      </div>
+    </div>
+    <div style="margin-top:.75rem">
+      <div style="font-size:.75rem;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem">Day of week (optional)</div>
+      <div style="display:flex;gap:.3rem;flex-wrap:wrap">
+        <button class="date-chip" data-dow="1">Mon</button>
+        <button class="date-chip" data-dow="2">Tue</button>
+        <button class="date-chip" data-dow="3">Wed</button>
+        <button class="date-chip" data-dow="4">Thu</button>
+        <button class="date-chip" data-dow="5">Fri</button>
+        <button class="date-chip" data-dow="6">Sat</button>
+        <button class="date-chip" data-dow="0">Sun</button>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary modal-btn-primary" onclick="runIgDateSync()">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="14" height="14"><path fill-rule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clip-rule="evenodd"/></svg>
+        Pull from Instagram
+      </button>
+      <button class="btn btn-ghost modal-btn-cancel" onclick="closeIgSync()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script src="ledgr.js"></script>
+<script>
+  checkAuth();
+  initTheme();
+  refreshNavAvatar();
+  startInstagramSync();
+  startReportScheduler();
+  refreshNavBadge();
+
+  let currentFilter = 'all';
+  let currentView   = localStorage.getItem('ledgr_view') || 'slides';
+  let searchQuery   = '';
+  let currentSort   = localStorage.getItem('ledgr_sort') || 'newest';
+  let dateFrom      = '';
+  let dateTo        = '';
+
+  // Default to today's date unless arriving via a deep-link
+  if (!new URLSearchParams(location.search).get('id')) {
+    const _pad = n => String(n).padStart(2, '0');
+    const _now = new Date();
+    const _today = `${_now.getFullYear()}-${_pad(_now.getMonth()+1)}-${_pad(_now.getDate())}`;
+    dateFrom = _today;
+    dateTo   = _today;
+    document.getElementById('dateFrom').value = _today;
+    document.getElementById('dateTo').value   = _today;
+    document.getElementById('dateFilterBtn').classList.add('active');
+    // highlight "Today" chip once the DOM is ready
+    requestAnimationFrame(() => {
+      document.querySelectorAll('.date-chip:not([data-dow])').forEach(c => {
+        c.classList.toggle('active', c.textContent.toLowerCase() === 'today');
+      });
+    });
+  }
+
+  document.getElementById('btnSlides').classList.toggle('active', currentView === 'slides');
+  document.getElementById('btnGrid').classList.toggle('active', currentView === 'grid');
+  document.getElementById('sortSelect').value = currentSort;
+  document.getElementById('sortSelect').addEventListener('change', e => {
+    currentSort = e.target.value;
+    localStorage.setItem('ledgr_sort', currentSort);
+    render();
+  });
+
+  // If arrived via notification deep-link (?id=xxx), highlight item
+  const _deepId = new URLSearchParams(location.search).get('id');
+  if (_deepId) {
+    // Set filter to show the item's status group after render
+    const _deepItem = getItem(_deepId);
+    if (_deepItem) {
+      currentFilter = _deepItem.status;
+      document.querySelectorAll('.filter-tab').forEach(b => {
+        b.classList.toggle('active', b.dataset.filter === currentFilter);
+      });
+    }
+  }
+
+  function setView(v) {
+    currentView = v;
+    localStorage.setItem('ledgr_view', v);
+    document.getElementById('btnSlides').classList.toggle('active', v === 'slides');
+    document.getElementById('btnGrid').classList.toggle('active', v === 'grid');
+    render();
+  }
+
+  document.getElementById('filterTabs').addEventListener('click', e => {
+    const btn = e.target.closest('.filter-tab');
+    if (!btn) return;
+    document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    render();
+  });
+
+  document.getElementById('searchInput').addEventListener('input', e => {
+    searchQuery = e.target.value.toLowerCase();
+    render();
+  });
+
+  function filteredItems() {
+    let items = getItems();
+    if (currentFilter !== 'all') items = items.filter(i => i.status === currentFilter);
+    if (searchQuery) items = items.filter(i =>
+      i.name.toLowerCase().includes(searchQuery) ||
+      (i.sellerRef   || '').toLowerCase().includes(searchQuery) ||
+      (i.buyerRef    || '').toLowerCase().includes(searchQuery) ||
+      (i.buyerPhone  || '').toLowerCase().includes(searchQuery) ||
+      (i.notes       || '').toLowerCase().includes(searchQuery)
+    );
+    if (dateFrom) {
+      const from = new Date(dateFrom + 'T00:00:00').getTime();
+      items = items.filter(i => new Date(i.createdAt).getTime() >= from);
+    }
+    if (dateTo) {
+      const to = new Date(dateTo + 'T23:59:59').getTime();
+      items = items.filter(i => new Date(i.createdAt).getTime() <= to);
+    }
+    const sortFns = {
+      newest:       (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+      oldest:       (a, b) => new Date(a.createdAt) - new Date(b.createdAt),
+      'price-desc': (a, b) => (Number(b.sellersAmount) || 0) - (Number(a.sellersAmount) || 0),
+      'price-asc':  (a, b) => (Number(a.sellersAmount) || 0) - (Number(b.sellersAmount) || 0),
+      'name-asc':   (a, b) => a.name.localeCompare(b.name),
+    };
+    items.sort(sortFns[currentSort] || sortFns.newest);
+    return items;
+  }
+
+  // ── Date filter ──────────────────────────────────────────────────────────────
+  function toggleDateFilter() {
+    const panel = document.getElementById('dateFilterPanel');
+    const open  = panel.style.display === 'none' || !panel.style.display;
+    panel.style.display = open ? '' : 'none';
+    document.getElementById('dateFilterBtn').classList.toggle('active', open);
+  }
+
+  function applyDateFilter() {
+    dateFrom = document.getElementById('dateFrom').value;
+    dateTo   = document.getElementById('dateTo').value;
+    const active = dateFrom || dateTo;
+    document.getElementById('dateClearBtn').style.display = active ? '' : 'none';
+    document.getElementById('dateFilterBtn').classList.toggle('active', !!active);
+    updateDateSummary();
+    render();
+  }
+
+  function clearDateFilter() {
+    const _pad = n => String(n).padStart(2, '0');
+    const _now = new Date();
+    const _today = `${_now.getFullYear()}-${_pad(_now.getMonth()+1)}-${_pad(_now.getDate())}`;
+    dateFrom = _today; dateTo = _today;
+    document.getElementById('dateFrom').value = _today;
+    document.getElementById('dateTo').value   = _today;
+    document.getElementById('dateClearBtn').style.display = 'none';
+    document.getElementById('dateFilterBtn').classList.add('active');
+    document.querySelectorAll('.date-chip').forEach(c => c.classList.toggle('active', c.textContent.toLowerCase() === 'today'));
+    document.getElementById('dateFilterSummary').style.display = 'none';
+    render();
+  }
+
+  function setQuickDate(period) {
+    const now   = new Date();
+    const pad   = n => String(n).padStart(2, '0');
+    const fmt   = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+    let from, to = fmt(now);
+    if (period === 'today') {
+      from = fmt(now);
+    } else if (period === 'week') {
+      const d = new Date(now); d.setDate(d.getDate() - d.getDay());
+      from = fmt(d);
+    } else if (period === 'month') {
+      from = `${now.getFullYear()}-${pad(now.getMonth()+1)}-01`;
+    } else if (period === 'year') {
+      from = `${now.getFullYear()}-01-01`;
+    }
+    document.getElementById('dateFrom').value = from;
+    document.getElementById('dateTo').value   = to;
+    document.querySelectorAll('.date-chip').forEach(c => c.classList.toggle('active', c.textContent.toLowerCase().replace(' ','') === period));
+    applyDateFilter();
+  }
+
+  function updateDateSummary() {
+    const sumEl = document.getElementById('dateFilterSummary');
+    if (!dateFrom && !dateTo) { sumEl.style.display = 'none'; return; }
+    const fmtDate = s => s ? new Date(s + 'T12:00:00').toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—';
+    const count   = filteredItems().length;
+    sumEl.textContent = `${count} item${count !== 1 ? 's' : ''} added ${dateFrom ? 'from ' + fmtDate(dateFrom) : ''} ${dateTo ? 'to ' + fmtDate(dateTo) : ''}`.trim();
+    sumEl.style.display = '';
+  }
+
+  function updateCounts() {
+    const all = getItems();
+    document.getElementById('cntListed').textContent = all.filter(i => i.status === 'listed').length;
+    document.getElementById('cntAvail').textContent  = all.filter(i => i.status === 'available').length;
+    document.getElementById('cntSold').textContent   = all.filter(i => i.status === 'sold').length;
+    const shown = filteredItems().length;
+    document.getElementById('countLine').textContent = `${shown} item${shown !== 1 ? 's' : ''}`;
+  }
+
+  function renderSlides(items) {
+    const STATUSES = [
+      { key: 'listed',    label: 'Listed' },
+      { key: 'available', label: 'Available' },
+      { key: 'sold',      label: 'Sold' },
+    ];
+    if (currentFilter !== 'all') {
+      const status = STATUSES.find(s => s.key === currentFilter);
+      if (!items.length) return emptyState();
+      return `
+        <div class="status-group-header">
+          <span class="status-group-title ${currentFilter}">${status.label}</span>
+          <span class="group-count">${items.length}</span>
+        </div>
+        <div class="slides-row">${items.map(i => renderCard(i)).join('')}</div>`;
+    }
+    return `<div class="slides-container">${
+      STATUSES.map(s => {
+        const group = items.filter(i => i.status === s.key);
+        return `
+          <div class="status-group">
+            <div class="status-group-header">
+              <span class="status-group-title ${s.key}">${s.label}</span>
+              <span class="group-count">${group.length}</span>
+            </div>
+            ${group.length
+              ? `<div class="slides-row">${group.map(i => renderCard(i)).join('')}</div>`
+              : `<div style="color:var(--text3);font-size:.8125rem;padding:.5rem 0">No ${s.label.toLowerCase()} items.</div>`
+            }
+          </div>`;
+      }).join('')
+    }</div>`;
+  }
+
+  function renderGrid(items) {
+    if (!items.length) return emptyState();
+    return `<div class="items-grid fade-in">${items.map(i => renderCard(i)).join('')}</div>`;
+  }
+
+  function emptyState() {
+    return `<div class="empty">
+      <svg viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 3a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2V5a2 2 0 00-2-2H5zm0 2h10v7h-2l-1 2H8l-1-2H5V5z" clip-rule="evenodd"/></svg>
+      <h3>No items found</h3>
+      <p>Try a different search term or add a new item.</p>
+      <a href="add.html" class="btn btn-primary" style="margin-top:1rem">Add Item</a>
+    </div>`;
+  }
+
+  function render() {
+    clearSelection();
+    updateCounts();
+    const items = filteredItems();
+    const html = currentView === 'slides' ? renderSlides(items) : renderGrid(items);
+    document.getElementById('inventoryContent').innerHTML = html;
+  }
+
+  function onStatsChange() { render(); refreshNavBadge(); }
+
+  render();
+
+  // Scroll deep-linked item into view and flash it
+  if (_deepId) {
+    setTimeout(() => {
+      const el = document.querySelector(`.item-card[data-id="${_deepId}"]`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.style.outline = '2px solid var(--gold)';
+        setTimeout(() => { el.style.outline = ''; }, 2500);
+      }
+    }, 150);
+  }
+
+  // ── IG Date Sync modal ──────────────────────────────────────────────
+  (function initIgModal() {
+    const MONTHS = ['January','February','March','April','May','June',
+                    'July','August','September','October','November','December'];
+    const now = new Date();
+    const thisYear = now.getFullYear();
+    const thisMonth = now.getMonth() + 1;
+
+    // Populate day selects
+    ['igFromDay','igToDay'].forEach(id => {
+      const sel = document.getElementById(id);
+      for (let d = 1; d <= 31; d++) {
+        const opt = document.createElement('option');
+        opt.value = d; opt.textContent = d; sel.appendChild(opt);
+      }
+    });
+
+    ['igFromMonth','igToMonth'].forEach(id => {
+      const sel = document.getElementById(id);
+      MONTHS.forEach((m, i) => {
+        const opt = document.createElement('option');
+        opt.value = i + 1; opt.textContent = m; sel.appendChild(opt);
+      });
+    });
+
+    ['igFromYear','igToYear'].forEach(id => {
+      const sel = document.getElementById(id);
+      for (let y = thisYear; y >= 2020; y--) {
+        const opt = document.createElement('option');
+        opt.value = y; opt.textContent = y; sel.appendChild(opt);
+      }
+    });
+
+    // Default: From = day 1, 3 months ago; To = last day of this month
+    const fromDate = new Date(now.getFullYear(), now.getMonth() - 2, 1);
+    document.getElementById('igFromDay').value   = 1;
+    document.getElementById('igFromMonth').value = fromDate.getMonth() + 1;
+    document.getElementById('igFromYear').value  = fromDate.getFullYear();
+    // last day of current month
+    const lastDay = new Date(thisYear, thisMonth, 0).getDate();
+    document.getElementById('igToDay').value   = lastDay;
+    document.getElementById('igToMonth').value = thisMonth;
+    document.getElementById('igToYear').value  = thisYear;
+
+    // Wire up DOW chip toggles
+    document.querySelectorAll('.date-chip[data-dow]').forEach(btn => {
+      btn.addEventListener('click', () => btn.classList.toggle('active'));
+    });
+  })();
+
+  function openIgSync() {
+    document.getElementById('igSyncOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeIgSync() {
+    document.getElementById('igSyncOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function runIgDateSync() {
+    const fromDay   = Number(document.getElementById('igFromDay').value);
+    const fromMonth = Number(document.getElementById('igFromMonth').value);
+    const fromYear  = Number(document.getElementById('igFromYear').value);
+    const toDay     = Number(document.getElementById('igToDay').value);
+    const toMonth   = Number(document.getElementById('igToMonth').value);
+    const toYear    = Number(document.getElementById('igToYear').value);
+    // since = midnight UTC on chosen from-day
+    const since = Math.floor(Date.UTC(fromYear, fromMonth - 1, fromDay) / 1000);
+    // until = 23:59:59 UTC on chosen to-day
+    const until = Math.floor(Date.UTC(toYear, toMonth - 1, toDay, 23, 59, 59) / 1000);
+    // collect active DOW chips
+    const activeDow = [...document.querySelectorAll('.date-chip[data-dow].active')]
+      .map(b => Number(b.dataset.dow));
+    const opts = { since, until };
+    if (activeDow.length) opts.days = activeDow;
+    closeIgSync();
+    syncFromInstagram(true, opts);
+  }
+</script>
+</body>
+</html>

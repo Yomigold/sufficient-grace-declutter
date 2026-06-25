@@ -1,0 +1,35 @@
+{
+  "name": "Ledgr — Inventory",
+  "short_name": "Ledgr",
+  "description": "Inventory management for resellers — track listings, sales and margins.",
+  "start_url": "/index.html?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0b0b13",
+  "theme_color": "#0b0b13",
+  "prefer_related_applications": false,
+  "categories": ["business", "productivity", "finance"],
+  "icons": [
+    { "src": "/icon.svg",     "sizes": "any",     "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png",     "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png",     "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png",     "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Add Item",
+      "short_name": "Add",
+      "description": "Add a new inventory item",
+      "url": "/add.html?source=pwa",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Inventory",
+      "short_name": "Inventory",
+      "description": "View all inventory items",
+      "url": "/inventory.html?source=pwa",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

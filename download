@@ -1,0 +1,688 @@
+import { useState, useEffect, useMemo } from "react";
+
+// ─── Storage Helpers ──────────────────────────────────────────────────────────
+const s_get = async (k, shared=false) => { try { const r = await window.storage.get(k,shared); return r?JSON.parse(r.value):null; } catch { return null; } };
+const s_set = async (k, v, shared=false) => { try { await window.storage.set(k,JSON.stringify(v),shared); } catch {} };
+const s_list = async (prefix, shared=false) => { try { const r = await window.storage.list(prefix,shared); return r?.keys||[]; } catch { return []; } };
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+const uid  = () => Math.random().toString(36).slice(2,9).toUpperCase();
+const today = () => new Date().toISOString().split("T")[0];
+const fmt  = n => "₦"+Number(n||0).toLocaleString("en-NG");
+const hash = s => btoa(s+":sgd2026").split("").reverse().join("").slice(0,20);
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+const STATUSES = ["Listed","Reserved","Sale Confirmed","Pickup Pending","Completed","Rejected","Withdrawn","Cancelled - Buyer","Cancelled - SGD"];
+const EXP_CATS = ["Logistics","Marketing","Salaries","Debt Payment","Refund","Maintenance","Supplies","Personal","Other"];
+const STATUS_CLR = { "Listed":"#4CAF50","Reserved":"#FFC107","Sale Confirmed":"#2196F3","Pickup Pending":"#FF9800","Completed":"#2ecc71","Rejected":"#e74c3c","Withdrawn":"#9C27B0","Cancelled - Buyer":"#e74c3c","Cancelled - SGD":"#e74c3c" };
+
+// ─── Design Tokens ────────────────────────────────────────────────────────────
+const T = { bg:"#0A0A0A", card:"#121212", card2:"#181818", card3:"#1E1E1E", border:"#252525", gold:"#C9924A", goldL:"#E8B87A", text:"#C0B9AF", textD:"#F0EBE3", muted:"#666", ghost:"#333", green:"#2ecc71", red:"#e74c3c", orange:"#FF9800", blue:"#3498db" };
+
+const inp = { width:"100%", background:T.card3, border:`1.5px solid ${T.border}`, borderRadius:8, padding:"10px 13px", color:T.textD, fontSize:13, boxSizing:"border-box", outline:"none", fontFamily:"inherit" };
+const sel = { ...inp, cursor:"pointer" };
+const lbl = { display:"block", fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", letterSpacing:1, marginBottom:5 };
+const btn = (bg=T.gold,fg=T.bg,full=false) => ({ background:bg, color:fg, border:"none", borderRadius:8, padding:full?"12px":"9px 16px", fontWeight:700, fontSize:13, cursor:"pointer", width:full?"100%":"auto", fontFamily:"inherit" });
+const btnSm = (bg=T.card3,fg=T.gold) => ({ background:bg, color:fg, border:`1px solid ${T.border}`, borderRadius:6, padding:"4px 10px", fontWeight:700, fontSize:11, cursor:"pointer", fontFamily:"inherit" });
+const card = (extra={}) => ({ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:16, ...extra });
+const card2 = (extra={}) => ({ background:T.card2, border:`1px solid ${T.border}`, borderRadius:10, padding:14, ...extra });
+const badge = st => ({ background:(STATUS_CLR[st]||T.muted)+"25", color:STATUS_CLR[st]||T.muted, borderRadius:20, padding:"2px 9px", fontSize:10, fontWeight:700 });
+const tag = (c,t) => <span style={{ background:c+"22", color:c, borderRadius:6, padding:"2px 8px", fontSize:10, fontWeight:700 }}>{t}</span>;
+
+function Field({ label, children, half }) { return <div style={{ marginBottom:12, flex:half?1:"auto" }}><label style={lbl}>{label}</label>{children}</div>; }
+function Row({ children }) { return <div style={{ display:"flex", gap:10 }}>{children}</div>; }
+function Divider() { return <div style={{ borderTop:`1px solid ${T.border}`, margin:"14px 0" }} />; }
+function Empty({ msg }) { return <div style={{ textAlign:"center", padding:"36px 0", color:T.ghost, fontSize:13 }}>{msg}</div>; }
+
+function Modal({ title, onClose, children, wide }) {
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.85)", zIndex:300, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:16, width:"100%", maxWidth:wide?680:520, maxHeight:"92vh", overflow:"auto", boxShadow:"0 32px 80px rgba(0,0,0,0.6)" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"16px 20px", borderBottom:`1px solid ${T.border}`, position:"sticky", top:0, background:T.card, zIndex:1 }}>
+          <span style={{ fontSize:15, fontWeight:800, color:T.textD, fontFamily:"Georgia,serif" }}>{title}</span>
+          <button onClick={onClose} style={{ background:T.card3, border:`1px solid ${T.border}`, color:T.muted, borderRadius:"50%", width:28, height:28, cursor:"pointer", fontSize:16 }}>×</button>
+        </div>
+        <div style={{ padding:"18px 20px 22px" }}>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ label, value, sub, accent, onClick }) {
+  return (
+    <div onClick={onClick} style={{ background:T.card, border:`1px solid ${T.border}`, borderRadius:12, padding:"14px 16px", borderTop:`3px solid ${accent||T.gold}`, cursor:onClick?"pointer":"default", flex:1, minWidth:130 }}>
+      <div style={{ fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", letterSpacing:1, marginBottom:4 }}>{label}</div>
+      <div style={{ fontSize:20, fontWeight:800, color:T.textD, fontFamily:"Georgia,serif" }}>{value}</div>
+      {sub && <div style={{ fontSize:11, color:T.muted, marginTop:2 }}>{sub}</div>}
+    </div>
+  );
+}
+
+// ─── SEED DATA ────────────────────────────────────────────────────────────────
+const EMPTY_BIZ = { transactions:[], expenses:[], sellers:[], buyers:[], cashEntries:[], oldDebt:0, activityLog:[] };
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MAIN APP
+// ══════════════════════════════════════════════════════════════════════════════
+export default function App() {
+  const [screen, setScreen]     = useState("splash");   // splash | login | register | app
+  const [authMode, setAuthMode] = useState("login");
+  const [session, setSession]   = useState(null);       // { businessId, userId, role, bizName, userName }
+  const [biz, setBiz]           = useState(null);       // business data object
+  const [tab, setTab]           = useState("dashboard");
+  const [modal, setModal]       = useState(null);
+  const [loading, setLoading]   = useState(false);
+  const [err, setErr]           = useState("");
+  const [toast, setToast]       = useState("");
+
+  // Auth forms
+  const [regForm, setRegForm]   = useState({ bizName:"", ownerName:"", email:"", phone:"", password:"", confirm:"" });
+  const [loginForm, setLoginForm] = useState({ email:"", password:"" });
+  // Staff invite form
+  const [staffForm, setStaffForm] = useState({ name:"", email:"", phone:"", password:"", role:"staff" });
+  // Tx form
+  const blankTx = { ref:"", date:today(), item:"", sellerRef:"", sellerPrice:"", sgdPrice:"", buyerRef:"", amountPaid:"", status:"Sale Confirmed", notes:"" };
+  const blankExp = { date:today(), category:"", description:"", amount:"", addedBy:"" };
+  const blankCash = { date:today(), amount:"", note:"" };
+  const [txForm, setTxForm]     = useState(blankTx);
+  const [expForm, setExpForm]   = useState(blankExp);
+  const [cashForm, setCashForm] = useState(blankCash);
+  const [oldDebtInput, setOldDebtInput] = useState("");
+  const [pickupTxId, setPickupTxId]     = useState(null);
+  const [pickupResult, setPickupResult] = useState("Pass");
+
+  const showToast = (msg) => { setToast(msg); setTimeout(()=>setToast(""),3000); };
+
+  // ── Splash ──
+  useEffect(() => { setTimeout(()=>setScreen("auth"), 1800); }, []);
+
+  // ── Register Business ──
+  const registerBusiness = async () => {
+    if (!regForm.bizName||!regForm.ownerName||!regForm.email||!regForm.password) return setErr("Fill all required fields");
+    if (regForm.password !== regForm.confirm) return setErr("Passwords do not match");
+    setLoading(true);
+    const bizId = "BIZ_"+uid();
+    const userId = "USR_"+uid();
+    const owner = { id:userId, name:regForm.ownerName, email:regForm.email, phone:regForm.phone, role:"owner", passwordHash:hash(regForm.password), bizId };
+    const bizMeta = { id:bizId, name:regForm.bizName, ownerId:userId, createdAt:today(), plan:"starter", staff:[owner] };
+    await s_set("biz_meta:"+bizId, bizMeta, true);
+    await s_set("biz_data:"+bizId, EMPTY_BIZ, true);
+    await s_set("user_index:"+regForm.email.toLowerCase(), { userId, bizId, passwordHash:hash(regForm.password) }, true);
+    setLoading(false);
+    showToast("Business registered!");
+    setSession({ businessId:bizId, userId, role:"owner", bizName:regForm.bizName, userName:regForm.ownerName });
+    setBiz({ ...EMPTY_BIZ });
+    setScreen("app");
+  };
+
+  // ── Login ──
+  const loginUser = async () => {
+    if (!loginForm.email||!loginForm.password) return setErr("Enter email and password");
+    setLoading(true); setErr("");
+    const idx = await s_get("user_index:"+loginForm.email.toLowerCase(), true);
+    if (!idx) { setLoading(false); return setErr("Account not found"); }
+    if (idx.passwordHash !== hash(loginForm.password)) { setLoading(false); return setErr("Wrong password"); }
+    const meta = await s_get("biz_meta:"+idx.bizId, true);
+    const data = await s_get("biz_data:"+idx.bizId, true);
+    const user = meta.staff.find(s=>s.id===idx.userId);
+    setLoading(false);
+    setSession({ businessId:idx.bizId, userId:idx.userId, role:user.role, bizName:meta.name, userName:user.name });
+    setBiz(data || EMPTY_BIZ);
+    setScreen("app");
+  };
+
+  // ── Persist biz data ──
+  const updateBiz = (fn) => {
+    setBiz(prev => {
+      const next = JSON.parse(JSON.stringify(prev));
+      fn(next);
+      s_set("biz_data:"+session.businessId, next, true);
+      return next;
+    });
+  };
+
+  const logActivity = (action, detail) => {
+    updateBiz(d => {
+      if (!d.activityLog) d.activityLog = [];
+      d.activityLog.unshift({ id:uid(), action, detail, by:session?.userName, at:new Date().toLocaleString("en-NG") });
+      if (d.activityLog.length > 100) d.activityLog = d.activityLog.slice(0,100);
+    });
+  };
+
+  // ── Add Staff ──
+  const addStaff = async () => {
+    if (!staffForm.name||!staffForm.email||!staffForm.password) return setErr("Fill all required fields");
+    setLoading(true);
+    const userId = "USR_"+uid();
+    const newStaff = { id:userId, name:staffForm.name, email:staffForm.email, phone:staffForm.phone, role:staffForm.role, passwordHash:hash(staffForm.password), bizId:session.businessId };
+    const meta = await s_get("biz_meta:"+session.businessId, true);
+    meta.staff.push(newStaff);
+    await s_set("biz_meta:"+session.businessId, meta, true);
+    await s_set("user_index:"+staffForm.email.toLowerCase(), { userId, bizId:session.businessId, passwordHash:hash(staffForm.password) }, true);
+    setLoading(false); setModal(null);
+    setStaffForm({ name:"", email:"", phone:"", password:"", role:"staff" });
+    showToast("Staff added successfully!");
+    logActivity("Staff Added", staffForm.name);
+  };
+
+  // ── Add Transaction ──
+  const addTx = () => {
+    if (!txForm.item||!txForm.sellerPrice||!txForm.sgdPrice) return setErr("Fill item, seller price and SGD price");
+    const margin = Number(txForm.sgdPrice) - Number(txForm.sellerPrice);
+    updateBiz(d => d.transactions.unshift({
+      id:uid(), ref:txForm.ref||uid(), date:txForm.date, item:txForm.item,
+      sellerRef:txForm.sellerRef, sellerPrice:Number(txForm.sellerPrice),
+      sgdPrice:Number(txForm.sgdPrice), margin,
+      buyerRef:txForm.buyerRef, amountPaid:Number(txForm.amountPaid||txForm.sgdPrice),
+      status:txForm.status, notes:txForm.notes, sellerPaid:false,
+      addedBy:session.userName, addedAt:today()
+    }));
+    logActivity("Item Added", `${txForm.item} — Margin: ${fmt(margin)}`);
+    setTxForm(blankTx); setModal(null); setErr(""); showToast("Transaction added!");
+  };
+
+  const addExp = () => {
+    if (!expForm.category||!expForm.amount) return setErr("Fill category and amount");
+    updateBiz(d => d.expenses.unshift({ id:uid(), ...expForm, amount:Number(expForm.amount), addedBy:session.userName }));
+    logActivity("Expense Logged", `${expForm.category} — ${fmt(expForm.amount)}`);
+    setExpForm(blankExp); setModal(null); setErr(""); showToast("Expense logged!");
+  };
+
+  const addCash = () => {
+    if (!cashForm.amount) return;
+    updateBiz(d => d.cashEntries.unshift({ id:uid(), ...cashForm, amount:Number(cashForm.amount), addedBy:session.userName }));
+    setCashForm(blankCash); setModal(null); showToast("Cash entry saved!");
+  };
+
+  const doPickup = () => {
+    updateBiz(d => {
+      const t = d.transactions.find(x=>x.id===pickupTxId);
+      if (!t) return;
+      if (pickupResult==="Pass") { t.status="Completed"; t.sellerPaid=true; t.completedBy=session.userName; t.completedAt=today(); }
+      else { t.status="Rejected"; t.rejectedBy=session.userName; }
+    });
+    logActivity("Pickup "+pickupResult, biz.transactions.find(t=>t.id===pickupTxId)?.item||"");
+    setModal(null); setPickupTxId(null); showToast(pickupResult==="Pass"?"Pickup complete! Seller paid.":"Item rejected.");
+  };
+
+  const updateStatus = (id, status) => {
+    updateBiz(d => { const t=d.transactions.find(x=>x.id===id); if(t) { t.status=status; t.statusBy=session.userName; } });
+    logActivity("Status Update", status);
+  };
+
+  const markSellerPaid = id => {
+    updateBiz(d => { const t=d.transactions.find(x=>x.id===id); if(t) t.sellerPaid=true; });
+    showToast("Seller marked as paid");
+  };
+
+  const deleteTx = id => { updateBiz(d => { d.transactions=d.transactions.filter(t=>t.id!==id); }); showToast("Deleted"); };
+  const deleteExp = id => { updateBiz(d => { d.expenses=d.expenses.filter(e=>e.id!==id); }); };
+
+  const isOwner = session?.role === "owner";
+
+  // ── Metrics ──
+  const M = useMemo(() => {
+    if (!biz) return {};
+    const completed = biz.transactions.filter(t=>t.status==="Completed");
+    const pending   = biz.transactions.filter(t=>["Pickup Pending","Sale Confirmed","Reserved","Listed"].includes(t.status));
+    const margin    = completed.reduce((s,t)=>s+t.margin,0);
+    const expenses  = biz.expenses.reduce((s,e)=>s+Number(e.amount||0),0);
+    const cash      = biz.cashEntries.reduce((s,c)=>s+Number(c.amount||0),0);
+    const owedPending = pending.reduce((s,t)=>s+Number(t.sellerPrice||0),0);
+    const owedDone    = completed.filter(t=>!t.sellerPaid).reduce((s,t)=>s+Number(t.sellerPrice||0),0);
+    const totalOwed   = owedPending + owedDone + Number(biz.oldDebt||0);
+    return { margin, expenses, net:margin-expenses, cash, owedPending, owedDone, totalOwed, shortfall:totalOwed-cash, pendingCount:pending.length, completedCount:completed.length, totalItems:biz.transactions.length };
+  }, [biz]);
+
+  const pendingPickups = biz?.transactions.filter(t=>["Pickup Pending","Sale Confirmed"].includes(t.status))||[];
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // SCREENS
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  // ── SPLASH ──
+  if (screen==="splash") return (
+    <div style={{ minHeight:"100vh", background:T.bg, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ fontFamily:"Georgia,serif", fontSize:32, fontWeight:700, color:T.gold, letterSpacing:1, marginBottom:8 }}>✦ Ledgr</div>
+      <div style={{ fontSize:12, color:T.muted, letterSpacing:3, textTransform:"uppercase" }}>Small Business Accounting</div>
+      <div style={{ width:40, height:2, background:T.gold, marginTop:24, borderRadius:2, animation:"pulse 1.5s infinite" }} />
+      <style>{`@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}`}</style>
+    </div>
+  );
+
+  // ── AUTH ──
+  if (screen==="auth") return (
+    <div style={{ minHeight:"100vh", background:T.bg, display:"flex", alignItems:"center", justifyContent:"center", padding:16 }}>
+      <div style={{ width:"100%", maxWidth:420 }}>
+        <div style={{ textAlign:"center", marginBottom:32 }}>
+          <div style={{ fontFamily:"Georgia,serif", fontSize:28, fontWeight:700, color:T.gold }}>✦ Ledgr</div>
+          <div style={{ fontSize:11, color:T.muted, letterSpacing:2, textTransform:"uppercase", marginTop:4 }}>Business Accounting</div>
+        </div>
+        <div style={{ ...card(), padding:28 }}>
+          <div style={{ display:"flex", gap:0, marginBottom:24, borderRadius:8, overflow:"hidden", border:`1px solid ${T.border}` }}>
+            {["login","register"].map(m => (
+              <button key={m} onClick={()=>{setAuthMode(m);setErr("");}} style={{ flex:1, padding:"10px", border:"none", background:authMode===m?T.gold:T.card3, color:authMode===m?T.bg:T.muted, fontWeight:700, fontSize:12, cursor:"pointer", textTransform:"capitalize" }}>{m==="login"?"Sign In":"Register Business"}</button>
+            ))}
+          </div>
+          {err && <div style={{ background:T.red+"22", color:T.red, borderRadius:8, padding:"10px 12px", fontSize:12, marginBottom:14 }}>{err}</div>}
+          {authMode==="login" ? (
+            <>
+              <Field label="Email *"><input style={inp} type="email" value={loginForm.email} onChange={e=>setLoginForm(f=>({...f,email:e.target.value}))} placeholder="owner@business.com" /></Field>
+              <Field label="Password *"><input style={inp} type="password" value={loginForm.password} onChange={e=>setLoginForm(f=>({...f,password:e.target.value}))} placeholder="Your password" /></Field>
+              <button style={{ ...btn(T.gold,T.bg), width:"100%", padding:"12px", marginTop:8 }} onClick={loginUser} disabled={loading}>{loading?"Signing in...":"Sign In ✦"}</button>
+              <div style={{ textAlign:"center", marginTop:16, fontSize:12, color:T.muted }}>New business? <span onClick={()=>{setAuthMode("register");setErr("");}} style={{ color:T.gold, cursor:"pointer", fontWeight:700 }}>Register here</span></div>
+            </>
+          ) : (
+            <>
+              <Field label="Business Name *"><input style={inp} value={regForm.bizName} onChange={e=>setRegForm(f=>({...f,bizName:e.target.value}))} placeholder="e.g. Sufficient Grace Declutter" /></Field>
+              <Row><Field label="Your Name *" half><input style={inp} value={regForm.ownerName} onChange={e=>setRegForm(f=>({...f,ownerName:e.target.value}))} placeholder="Full name" /></Field>
+              <Field label="Phone" half><input style={inp} value={regForm.phone} onChange={e=>setRegForm(f=>({...f,phone:e.target.value}))} placeholder="080..." /></Field></Row>
+              <Field label="Email *"><input style={inp} type="email" value={regForm.email} onChange={e=>setRegForm(f=>({...f,email:e.target.value}))} placeholder="owner@yourbusiness.com" /></Field>
+              <Row><Field label="Password *" half><input style={inp} type="password" value={regForm.password} onChange={e=>setRegForm(f=>({...f,password:e.target.value}))} placeholder="Create password" /></Field>
+              <Field label="Confirm *" half><input style={inp} type="password" value={regForm.confirm} onChange={e=>setRegForm(f=>({...f,confirm:e.target.value}))} placeholder="Confirm password" /></Field></Row>
+              <button style={{ ...btn(T.gold,T.bg), width:"100%", padding:"12px", marginTop:8 }} onClick={registerBusiness} disabled={loading}>{loading?"Registering...":"Register Business ✦"}</button>
+              <div style={{ textAlign:"center", marginTop:16, fontSize:12, color:T.muted }}>Already registered? <span onClick={()=>{setAuthMode("login");setErr("");}} style={{ color:T.gold, cursor:"pointer", fontWeight:700 }}>Sign in</span></div>
+            </>
+          )}
+        </div>
+        <div style={{ textAlign:"center", marginTop:20, fontSize:11, color:T.ghost }}>Structure First, Scale Second</div>
+      </div>
+    </div>
+  );
+
+  // ── MAIN APP ──
+  const TABS = isOwner
+    ? [{ k:"dashboard",l:"📊 Dashboard"},{ k:"transactions",l:"📦 Items"},{ k:"pickups",l:"🚚 Pickups"},{ k:"expenses",l:"💸 Expenses"},{ k:"cash",l:"💰 Cash"},{ k:"pl",l:"📈 P&L"},{ k:"team",l:"👥 Team"},{ k:"activity",l:"📋 Log"}]
+    : [{ k:"transactions",l:"📦 Items"},{ k:"pickups",l:"🚚 Pickups"},{ k:"expenses",l:"💸 Expenses"}];
+
+  if (!TABS.find(t=>t.k===tab)) setTab(TABS[0].k);
+
+  return (
+    <div style={{ minHeight:"100vh", background:T.bg, fontFamily:"'Segoe UI',system-ui,sans-serif", color:T.text, fontSize:14 }}>
+
+      {/* Toast */}
+      {toast && <div style={{ position:"fixed", top:16, right:16, zIndex:500, background:T.green, color:"#fff", borderRadius:8, padding:"10px 18px", fontWeight:700, fontSize:13, boxShadow:"0 8px 24px rgba(0,0,0,0.4)" }}>{toast}</div>}
+
+      {/* Header */}
+      <div style={{ background:T.card, borderBottom:`1px solid ${T.border}`, padding:"12px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", position:"sticky", top:0, zIndex:100 }}>
+        <div>
+          <div style={{ fontFamily:"Georgia,serif", fontSize:17, fontWeight:700, color:T.gold }}>✦ Ledgr</div>
+          <div style={{ fontSize:10, color:T.muted, marginTop:1 }}>{session?.bizName}</div>
+        </div>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <div style={{ textAlign:"right" }}>
+            <div style={{ fontSize:12, fontWeight:700, color:T.textD }}>{session?.userName}</div>
+            <div style={{ fontSize:10, color:isOwner?T.gold:T.blue }}>{isOwner?"👑 Owner":"👤 Staff"}</div>
+          </div>
+          <button style={{ ...btnSm(T.card3,T.red), border:`1px solid ${T.red}22` }} onClick={()=>{setSession(null);setBiz(null);setScreen("auth");}}>Logout</button>
+        </div>
+      </div>
+
+      {/* Nav */}
+      <div style={{ background:T.card, borderBottom:`1px solid ${T.border}`, display:"flex", gap:0, overflowX:"auto", padding:"0 8px" }}>
+        {TABS.map(t=><button key={t.k} style={{ padding:"11px 13px", border:"none", background:"none", cursor:"pointer", fontSize:12, fontWeight:tab===t.k?700:400, color:tab===t.k?T.gold:T.muted, borderBottom:tab===t.k?`2px solid ${T.gold}`:"2px solid transparent", whiteSpace:"nowrap" }} onClick={()=>setTab(t.k)}>{t.l}</button>)}
+      </div>
+
+      <div style={{ padding:"16px", maxWidth:920, margin:"0 auto" }}>
+
+        {/* ── DASHBOARD (owner only) ── */}
+        {tab==="dashboard" && isOwner && biz && (
+          <div>
+            <div style={{ fontSize:16, fontWeight:800, color:T.textD, fontFamily:"Georgia,serif", marginBottom:14 }}>Good day, {session.userName} 👋</div>
+            <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:14 }}>
+              <StatCard label="Net Profit" value={fmt(M.net)} sub="Revenue minus expenses" accent={M.net>=0?T.green:T.red} />
+              <StatCard label="SGD Revenue" value={fmt(M.margin)} sub="Margins earned" accent={T.gold} />
+              <StatCard label="Expenses" value={fmt(M.expenses)} sub="Total costs" accent={T.red} />
+              <StatCard label="Cash on Hand" value={fmt(M.cash)} sub="Available balance" accent={T.blue} />
+            </div>
+            <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:16 }}>
+              <StatCard label="Seller Payables" value={fmt(M.totalOwed)} sub="SGD owes sellers" accent={T.orange} />
+              <StatCard label="Shortfall" value={fmt(Math.max(0,M.shortfall))} sub="Cash vs obligations" accent={M.shortfall>0?T.red:T.green} />
+              <StatCard label="Pending Pickups" value={M.pendingCount} sub="Awaiting collection" />
+              <StatCard label="Completed" value={M.completedCount} sub="Closed deals" />
+            </div>
+            {/* Old Debt */}
+            <div style={{ ...card(), borderTop:`3px solid ${T.orange}`, marginBottom:12 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <div>
+                  <div style={{ fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", letterSpacing:1, marginBottom:3 }}>Pre-System Seller Debt</div>
+                  <div style={{ fontSize:22, fontWeight:800, color:T.orange, fontFamily:"Georgia,serif" }}>{fmt(biz.oldDebt||0)}</div>
+                </div>
+                <button style={btnSm()} onClick={()=>setModal("oldDebt")}>Update</button>
+              </div>
+            </div>
+            {/* Recent items */}
+            <div style={card()}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                <div style={{ fontWeight:700, color:T.textD }}>Recent Transactions</div>
+                <button style={{ ...btn(), padding:"7px 14px", fontSize:12 }} onClick={()=>setModal("addTx")}>+ Add Item</button>
+              </div>
+              {biz.transactions.length===0 ? <Empty msg="No transactions yet" /> :
+                <div style={{ overflowX:"auto" }}>
+                  <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                    <thead><tr>{["REF","Item","Seller Price","SGD Price","Margin","Status","By"].map(h=><th key={h} style={{ padding:"8px 10px", textAlign:"left", fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", borderBottom:`1px solid ${T.border}` }}>{h}</th>)}</tr></thead>
+                    <tbody>
+                      {biz.transactions.slice(0,6).map(t=>(
+                        <tr key={t.id}>
+                          <td style={{ padding:"10px", fontSize:11, fontWeight:700, color:T.gold, borderBottom:`1px solid ${T.border}` }}>{t.ref}</td>
+                          <td style={{ padding:"10px", fontWeight:600, color:T.textD, borderBottom:`1px solid ${T.border}` }}>{t.item}</td>
+                          <td style={{ padding:"10px", fontFamily:"monospace", fontSize:12, borderBottom:`1px solid ${T.border}` }}>{fmt(t.sellerPrice)}</td>
+                          <td style={{ padding:"10px", fontFamily:"monospace", fontSize:12, fontWeight:700, borderBottom:`1px solid ${T.border}` }}>{fmt(t.sgdPrice)}</td>
+                          <td style={{ padding:"10px", fontFamily:"monospace", fontSize:12, color:T.green, fontWeight:700, borderBottom:`1px solid ${T.border}` }}>{fmt(t.margin)}</td>
+                          <td style={{ padding:"10px", borderBottom:`1px solid ${T.border}` }}><span style={badge(t.status)}>{t.status}</span></td>
+                          <td style={{ padding:"10px", fontSize:11, color:T.muted, borderBottom:`1px solid ${T.border}` }}>{t.addedBy}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+          </div>
+        )}
+
+        {/* ── TRANSACTIONS ── */}
+        {tab==="transactions" && biz && (
+          <div>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <div style={{ fontSize:16, fontWeight:800, color:T.textD, fontFamily:"Georgia,serif" }}>Items ({biz.transactions.length})</div>
+              <button style={{ ...btn(), padding:"8px 14px", fontSize:12 }} onClick={()=>{setErr("");setModal("addTx");}}>+ New Item</button>
+            </div>
+            {biz.transactions.length===0 ? <Empty msg="No items yet. Add your first transaction." /> :
+              biz.transactions.map(t=>(
+                <div key={t.id} style={{ ...card2(), marginBottom:10, borderLeft:`3px solid ${STATUS_CLR[t.status]||T.border}` }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
+                    <div>
+                      <div style={{ fontWeight:700, color:T.textD, fontSize:14 }}>{t.item}</div>
+                      <div style={{ fontSize:11, color:T.gold, fontWeight:700, marginTop:1 }}>REF: {t.ref}</div>
+                    </div>
+                    <span style={badge(t.status)}>{t.status}</span>
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:8 }}>
+                    {[["SELLER PRICE",fmt(t.sellerPrice),T.text],["SGD PRICE",fmt(t.sgdPrice),T.textD],["MARGIN",fmt(t.margin),T.green]].map(([l,v,c])=>(
+                      <div key={l}><div style={{ fontSize:10, color:T.muted }}>{l}</div><div style={{ fontFamily:"monospace", fontWeight:700, color:c, fontSize:13 }}>{v}</div></div>
+                    ))}
+                  </div>
+                  <div style={{ fontSize:11, color:T.muted, marginBottom:8 }}>
+                    Seller: <span style={{ color:T.text }}>{t.sellerRef||"—"}</span>
+                    {t.buyerRef&&<> · Buyer: <span style={{ color:T.text }}>{t.buyerRef}</span></>}
+                    &nbsp;· {t.date} · Added by <span style={{ color:T.text }}>{t.addedBy}</span>
+                  </div>
+                  <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                    {!["Completed","Cancelled - Buyer","Cancelled - SGD","Withdrawn","Rejected"].includes(t.status)&&(
+                      <select style={{ ...sel, width:"auto", padding:"5px 8px", fontSize:11 }} value={t.status} onChange={e=>updateStatus(t.id,e.target.value)}>
+                        {STATUSES.map(s=><option key={s}>{s}</option>)}
+                      </select>
+                    )}
+                    {["Pickup Pending","Sale Confirmed"].includes(t.status)&&(
+                      <button style={{ ...btnSm(T.orange+"33",T.orange) }} onClick={()=>{setPickupTxId(t.id);setModal("pickup");}}>Do Pickup</button>
+                    )}
+                    {t.status==="Completed"&&!t.sellerPaid&&isOwner&&(
+                      <button style={{ ...btnSm(T.green+"33",T.green) }} onClick={()=>markSellerPaid(t.id)}>Mark Seller Paid</button>
+                    )}
+                    {t.status==="Completed"&&t.sellerPaid&&tag(T.green,"✓ Seller Paid")}
+                    {isOwner&&<button style={{ ...btnSm(T.red+"22",T.red) }} onClick={()=>deleteTx(t.id)}>Delete</button>}
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        )}
+
+        {/* ── PICKUPS ── */}
+        {tab==="pickups" && biz && (
+          <div>
+            <div style={{ fontSize:16, fontWeight:800, color:T.textD, fontFamily:"Georgia,serif", marginBottom:14 }}>Pending Pickups ({pendingPickups.length})</div>
+            {pendingPickups.length===0 ? <Empty msg="No pending pickups 🎉" /> :
+              pendingPickups.map((t,i)=>(
+                <div key={t.id} style={{ ...card2(), borderLeft:`3px solid ${T.orange}`, marginBottom:10 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <div>
+                      <div style={{ fontWeight:700, color:T.textD }}>{i+1}. {t.item}</div>
+                      <div style={{ fontSize:11, color:T.gold }}>REF: {t.ref}</div>
+                      <div style={{ fontSize:11, color:T.muted, marginTop:3 }}>
+                        Buyer: <span style={{ color:T.text }}>{t.buyerRef||"Unknown"}</span>
+                        &nbsp;· Seller Payout: <span style={{ color:T.orange, fontWeight:700 }}>{fmt(t.sellerPrice)}</span>
+                      </div>
+                    </div>
+                    <button style={{ ...btn(T.orange+"33",T.orange), padding:"8px 14px", fontSize:12 }} onClick={()=>{setPickupTxId(t.id);setModal("pickup");}}>Pickup ✓</button>
+                  </div>
+                </div>
+              ))
+            }
+            {pendingPickups.length>0&&(
+              <div style={card()}>
+                <div style={{ display:"flex", justifyContent:"space-between" }}><span style={{ color:T.muted }}>Total Pending</span><span style={{ fontWeight:700 }}>{pendingPickups.length} items</span></div>
+                <div style={{ display:"flex", justifyContent:"space-between", marginTop:8 }}><span style={{ color:T.muted }}>Seller Payouts Locked</span><span style={{ fontWeight:700, color:T.orange }}>{fmt(pendingPickups.reduce((s,t)=>s+t.sellerPrice,0))}</span></div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── EXPENSES ── */}
+        {tab==="expenses" && biz && (
+          <div>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <div style={{ fontSize:16, fontWeight:800, color:T.textD, fontFamily:"Georgia,serif" }}>Expenses</div>
+              <button style={{ ...btn(), padding:"8px 14px", fontSize:12 }} onClick={()=>{setErr("");setModal("addExp");}}>+ Log Expense</button>
+            </div>
+            {isOwner&&<div style={{ ...card(), borderTop:`3px solid ${T.red}`, marginBottom:12 }}><div style={{ fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", letterSpacing:1, marginBottom:3 }}>Total Expenses</div><div style={{ fontSize:22, fontWeight:800, color:T.red, fontFamily:"Georgia,serif" }}>{fmt(M.expenses)}</div></div>}
+            {biz.expenses.length===0?<Empty msg="No expenses logged yet"/>:
+              biz.expenses.map(e=>(
+                <div key={e.id} style={{ ...card2(), marginBottom:8 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <div>
+                      <div style={{ fontWeight:600, color:T.textD }}>{e.description||e.category}</div>
+                      <div style={{ fontSize:11, color:T.muted, marginTop:2 }}>{e.category} · {e.date} · {e.addedBy}</div>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <div style={{ fontFamily:"monospace", fontWeight:700, color:T.red, fontSize:15 }}>{fmt(e.amount)}</div>
+                      {isOwner&&<button style={{ ...btnSm(T.red+"22",T.red) }} onClick={()=>deleteExp(e.id)}>×</button>}
+                    </div>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        )}
+
+        {/* ── CASH (owner only) ── */}
+        {tab==="cash" && isOwner && biz && (
+          <div>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <div style={{ fontSize:16, fontWeight:800, color:T.textD, fontFamily:"Georgia,serif" }}>Cash on Hand</div>
+              <button style={{ ...btn(), padding:"8px 14px", fontSize:12 }} onClick={()=>setModal("addCash")}>+ Add Entry</button>
+            </div>
+            <div style={{ ...card(), borderTop:`3px solid ${T.blue}`, marginBottom:12 }}>
+              <div style={{ fontSize:10, fontWeight:700, color:T.muted, textTransform:"uppercase", letterSpacing:1, marginBottom:3 }}>Total Cash on Ground</div>
+              <div style={{ fontSize:28, fontWeight:800, color:T.textD, fontFamily:"Georgia,serif" }}>{fmt(M.cash)}</div>
+            </div>
+            {biz.cashEntries.length===0?<Empty msg="No cash entries"/>:
+              biz.cashEntries.map(c=>(
+                <div key={c.id} style={{ ...card2(), marginBottom:8 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between" }}>
+                    <div><div style={{ fontWeight:600, color:T.textD }}>{c.note||"Cash Entry"}</div><div style={{ fontSize:11, color:T.muted }}>{c.date}</div></div>
+                    <div style={{ fontFamily:"monospace", fontWeight:700, color:T.blue, fontSize:15 }}>{fmt(c.amount)}</div>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        )}
+
+        {/* ── P&L (owner only) ── */}
+        {tab==="pl" && isOwner && biz && (
+          <div>
+            <div style={{ fontSize:16, fontWeight:800, color:T.textD, fontFamily:"Georgia,serif", marginBottom:14 }}>Profit & Loss</div>
+            <div style={{ ...card(), background:M.net>=0?"#0d2218":"#2a0d0d", border:`1px solid ${M.net>=0?T.green:T.red}`, marginBottom:12 }}>
+              <div style={{ fontSize:11, color:M.net>=0?T.green:T.red, fontWeight:700, marginBottom:6 }}>NET PROFIT</div>
+              <div style={{ fontSize:34, fontWeight:800, color:T.textD, fontFamily:"Georgia,serif" }}>{fmt(M.net)}</div>
+              <div style={{ fontSize:12, color:T.muted, marginTop:4 }}>{M.net>=0?"✦ Business is profitable":"⚠ Review your expenses"}</div>
+            </div>
+            <div style={{ ...card(), marginBottom:12 }}>
+              <div style={{ fontWeight:700, color:T.textD, marginBottom:12 }}>Revenue Breakdown</div>
+              {[
+                ["Gross Sales (SGD Price collected)", biz.transactions.filter(t=>t.status==="Completed").reduce((s,t)=>s+t.sgdPrice,0), T.text],
+                ["Seller Payouts (cost of goods)", biz.transactions.filter(t=>t.status==="Completed").reduce((s,t)=>s+t.sellerPrice,0), T.red],
+                ["SGD Net Revenue (Margins Only)", M.margin, T.gold],
+              ].map(([l,v,c])=>(
+                <div key={l} style={{ display:"flex", justifyContent:"space-between", padding:"9px 0", borderBottom:`1px solid ${T.border}` }}>
+                  <span>{l}</span><span style={{ fontFamily:"monospace", fontWeight:700, color:c }}>{fmt(v)}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ ...card(), marginBottom:12 }}>
+              <div style={{ fontWeight:700, color:T.textD, marginBottom:12 }}>Expenses by Category</div>
+              {EXP_CATS.map(cat=>{ const total=biz.expenses.filter(e=>e.category===cat).reduce((s,e)=>s+Number(e.amount||0),0); return total>0?(<div key={cat} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${T.border}` }}><span>{cat}</span><span style={{ fontFamily:"monospace", color:T.red }}>{fmt(total)}</span></div>):null; })}
+              <div style={{ display:"flex", justifyContent:"space-between", padding:"10px 0", fontWeight:700 }}><span>Total</span><span style={{ fontFamily:"monospace", color:T.red }}>{fmt(M.expenses)}</span></div>
+            </div>
+            <div style={card()}>
+              <div style={{ fontWeight:700, color:T.textD, marginBottom:12 }}>Obligations</div>
+              {[
+                ["Pre-System Old Debt", biz.oldDebt||0, T.orange],
+                ["Pending Seller Payouts (not yet collected)", M.owedPending, T.orange],
+                ["Completed but Unpaid to Sellers", M.owedDone, T.red],
+                ["Total SGD Owes Sellers", M.totalOwed, T.red],
+                ["Cash on Hand", M.cash, T.blue],
+                ["Shortfall", Math.max(0,M.shortfall), M.shortfall>0?T.red:T.green],
+              ].map(([l,v,c])=>(
+                <div key={l} style={{ display:"flex", justifyContent:"space-between", padding:"8px 0", borderBottom:`1px solid ${T.border}` }}>
+                  <span>{l}</span><span style={{ fontFamily:"monospace", fontWeight:700, color:c }}>{fmt(v)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── TEAM (owner only) ── */}
+        {tab==="team" && isOwner && (
+          <div>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:14 }}>
+              <div style={{ fontSize:16, fontWeight:800, color:T.textD, fontFamily:"Georgia,serif" }}>Team</div>
+              <button style={{ ...btn(), padding:"8px 14px", fontSize:12 }} onClick={()=>{setErr("");setModal("addStaff");}}>+ Add Staff</button>
+            </div>
+            <div style={{ ...card2(), borderLeft:`3px solid ${T.gold}`, marginBottom:10 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                <div>
+                  <div style={{ fontWeight:700, color:T.textD }}>{session.userName}</div>
+                  <div style={{ fontSize:11, color:T.muted, marginTop:2 }}>Business Owner</div>
+                </div>
+                {tag(T.gold,"👑 Owner")}
+              </div>
+            </div>
+            <div style={{ fontSize:11, color:T.muted, marginBottom:10 }}>Staff members can: add items, do pickups, log expenses. They cannot see P&L, cash or team settings.</div>
+          </div>
+        )}
+
+        {/* ── ACTIVITY LOG (owner only) ── */}
+        {tab==="activity" && isOwner && biz && (
+          <div>
+            <div style={{ fontSize:16, fontWeight:800, color:T.textD, fontFamily:"Georgia,serif", marginBottom:14 }}>Activity Log</div>
+            {(!biz.activityLog||biz.activityLog.length===0)?<Empty msg="No activity logged yet"/>:
+              biz.activityLog.map(a=>(
+                <div key={a.id} style={{ ...card2(), marginBottom:8 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                    <div>
+                      <div style={{ fontWeight:600, color:T.textD, fontSize:13 }}>{a.action}</div>
+                      <div style={{ fontSize:11, color:T.muted, marginTop:2 }}>{a.detail}</div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:11, color:T.gold }}>{a.by}</div>
+                      <div style={{ fontSize:10, color:T.muted }}>{a.at}</div>
+                    </div>
+                  </div>
+                </div>
+              ))
+            }
+          </div>
+        )}
+
+      </div>
+
+      {/* ── MODALS ── */}
+      {modal==="addTx"&&(
+        <Modal title="Add Transaction" onClose={()=>setModal(null)}>
+          {err&&<div style={{ background:T.red+"22", color:T.red, borderRadius:8, padding:"9px 12px", fontSize:12, marginBottom:12 }}>{err}</div>}
+          <Row><Field label="REF / Deal Code" half><input style={inp} value={txForm.ref} onChange={e=>setTxForm(f=>({...f,ref:e.target.value}))} placeholder="e.g. SGDDEC84" /></Field>
+          <Field label="Date" half><input type="date" style={inp} value={txForm.date} onChange={e=>setTxForm(f=>({...f,date:e.target.value}))} /></Field></Row>
+          <Field label="Item Description *"><input style={inp} value={txForm.item} onChange={e=>setTxForm(f=>({...f,item:e.target.value}))} placeholder="e.g. LG 43inch Smart TV" /></Field>
+          <Row><Field label="Seller REF *" half><input style={inp} value={txForm.sellerRef} onChange={e=>setTxForm(f=>({...f,sellerRef:e.target.value}))} placeholder="e.g. SGDMAR12" /></Field>
+          <Field label="Buyer REF" half><input style={inp} value={txForm.buyerRef} onChange={e=>setTxForm(f=>({...f,buyerRef:e.target.value}))} placeholder="e.g. SGDJAN31" /></Field></Row>
+          <Row><Field label="Seller Price (₦) *" half><input type="number" style={inp} value={txForm.sellerPrice} onChange={e=>setTxForm(f=>({...f,sellerPrice:e.target.value}))} placeholder="200000" /></Field>
+          <Field label="SGD Price (₦) *" half><input type="number" style={inp} value={txForm.sgdPrice} onChange={e=>setTxForm(f=>({...f,sgdPrice:e.target.value}))} placeholder="239000" /></Field></Row>
+          {txForm.sellerPrice&&txForm.sgdPrice&&<div style={{ background:T.green+"22", borderRadius:8, padding:"9px 12px", marginBottom:12, color:T.green, fontWeight:700, fontSize:13 }}>Margin: {fmt(Number(txForm.sgdPrice)-Number(txForm.sellerPrice))}</div>}
+          <Row><Field label="Amount Paid (₦)" half><input type="number" style={inp} value={txForm.amountPaid} onChange={e=>setTxForm(f=>({...f,amountPaid:e.target.value}))} placeholder="Leave blank if full amount" /></Field>
+          <Field label="Status" half><select style={sel} value={txForm.status} onChange={e=>setTxForm(f=>({...f,status:e.target.value}))}>{STATUSES.map(s=><option key={s}>{s}</option>)}</select></Field></Row>
+          <Field label="Notes"><input style={inp} value={txForm.notes} onChange={e=>setTxForm(f=>({...f,notes:e.target.value}))} placeholder="Optional" /></Field>
+          <button style={{ ...btn(T.gold,T.bg,true), marginTop:4 }} onClick={addTx}>Add Transaction ✦</button>
+        </Modal>
+      )}
+
+      {modal==="addExp"&&(
+        <Modal title="Log Expense" onClose={()=>setModal(null)}>
+          {err&&<div style={{ background:T.red+"22", color:T.red, borderRadius:8, padding:"9px 12px", fontSize:12, marginBottom:12 }}>{err}</div>}
+          <Row><Field label="Date" half><input type="date" style={inp} value={expForm.date} onChange={e=>setExpForm(f=>({...f,date:e.target.value}))} /></Field>
+          <Field label="Category *" half><select style={sel} value={expForm.category} onChange={e=>setExpForm(f=>({...f,category:e.target.value}))}><option value="">Select...</option>{EXP_CATS.map(c=><option key={c}>{c}</option>)}</select></Field></Row>
+          <Field label="Description"><input style={inp} value={expForm.description} onChange={e=>setExpForm(f=>({...f,description:e.target.value}))} placeholder="What was this expense for?" /></Field>
+          <Field label="Amount (₦) *"><input type="number" style={inp} value={expForm.amount} onChange={e=>setExpForm(f=>({...f,amount:e.target.value}))} placeholder="e.g. 15000" /></Field>
+          <button style={{ ...btn(T.red,T.textD,true), marginTop:4 }} onClick={addExp}>Log Expense</button>
+        </Modal>
+      )}
+
+      {modal==="addCash"&&(
+        <Modal title="Add Cash Entry" onClose={()=>setModal(null)}>
+          <Field label="Date"><input type="date" style={inp} value={cashForm.date} onChange={e=>setCashForm(f=>({...f,date:e.target.value}))} /></Field>
+          <Field label="Amount (₦) *"><input type="number" style={inp} value={cashForm.amount} onChange={e=>setCashForm(f=>({...f,amount:e.target.value}))} placeholder="e.g. 1400000" /></Field>
+          <Field label="Note (e.g. Safe, POS, Account)"><input style={inp} value={cashForm.note} onChange={e=>setCashForm(f=>({...f,note:e.target.value}))} placeholder="Where is this cash?" /></Field>
+          <button style={{ ...btn(T.blue,T.textD,true), marginTop:4 }} onClick={addCash}>Save Cash Entry ✦</button>
+        </Modal>
+      )}
+
+      {modal==="addStaff"&&(
+        <Modal title="Add Staff Member" onClose={()=>setModal(null)}>
+          {err&&<div style={{ background:T.red+"22", color:T.red, borderRadius:8, padding:"9px 12px", fontSize:12, marginBottom:12 }}>{err}</div>}
+          <Field label="Full Name *"><input style={inp} value={staffForm.name} onChange={e=>setStaffForm(f=>({...f,name:e.target.value}))} placeholder="e.g. Emeka Okafor" /></Field>
+          <Row><Field label="Phone" half><input style={inp} value={staffForm.phone} onChange={e=>setStaffForm(f=>({...f,phone:e.target.value}))} placeholder="080..." /></Field>
+          <Field label="Role" half><select style={sel} value={staffForm.role} onChange={e=>setStaffForm(f=>({...f,role:e.target.value}))}><option value="staff">Staff</option><option value="supervisor">Supervisor</option></select></Field></Row>
+          <Field label="Email (used to login) *"><input style={inp} type="email" value={staffForm.email} onChange={e=>setStaffForm(f=>({...f,email:e.target.value}))} placeholder="staff@email.com" /></Field>
+          <Field label="Password (they will use this to login) *"><input style={inp} type="password" value={staffForm.password} onChange={e=>setStaffForm(f=>({...f,password:e.target.value}))} placeholder="Create a password for them" /></Field>
+          <div style={{ background:T.card3, borderRadius:8, padding:"10px 12px", marginBottom:12, fontSize:12, color:T.muted }}>
+            ✅ Staff can: Add items, do pickups, log expenses<br/>
+            🔒 Staff cannot: View P&L, Cash, Team settings
+          </div>
+          <button style={{ ...btn(T.gold,T.bg,true), marginTop:4 }} onClick={addStaff} disabled={loading}>{loading?"Adding...":"Add Staff Member ✦"}</button>
+        </Modal>
+      )}
+
+      {modal==="oldDebt"&&(
+        <Modal title="Update Pre-System Debt" onClose={()=>setModal(null)}>
+          <div style={{ fontSize:12, color:T.muted, marginBottom:14 }}>Total outstanding seller obligations that existed before you started using this app.</div>
+          <Field label="Amount (₦)"><input type="number" style={inp} value={oldDebtInput||biz.oldDebt||""} onChange={e=>setOldDebtInput(e.target.value)} placeholder="e.g. 2917000" /></Field>
+          <button style={{ ...btn(T.orange,T.bg,true), marginTop:4 }} onClick={()=>{ updateBiz(d=>{ d.oldDebt=Number(oldDebtInput||0); }); setModal(null); showToast("Debt updated"); }}>Update Debt ✦</button>
+        </Modal>
+      )}
+
+      {modal==="pickup"&&pickupTxId&&(()=>{ const t=biz.transactions.find(x=>x.id===pickupTxId); return t?(
+        <Modal title="Complete Pickup" onClose={()=>setModal(null)}>
+          <div style={{ ...card2(), marginBottom:14, borderLeft:`3px solid ${T.orange}` }}>
+            <div style={{ fontWeight:700, color:T.textD, fontSize:14 }}>{t.item}</div>
+            <div style={{ fontSize:11, color:T.gold, marginTop:2 }}>REF: {t.ref}</div>
+            <div style={{ display:"flex", gap:16, marginTop:10 }}>
+              <div><div style={{ fontSize:10, color:T.muted }}>SELLER PAYOUT DUE</div><div style={{ fontWeight:700, color:T.orange, fontFamily:"monospace" }}>{fmt(t.sellerPrice)}</div></div>
+              <div><div style={{ fontSize:10, color:T.muted }}>SGD MARGIN</div><div style={{ fontWeight:700, color:T.green, fontFamily:"monospace" }}>{fmt(t.margin)}</div></div>
+            </div>
+          </div>
+          <Field label="Inspection Result">
+            <select style={sel} value={pickupResult} onChange={e=>setPickupResult(e.target.value)}>
+              <option value="Pass">✅ Pass — Item approved, seller gets paid</option>
+              <option value="Fail">❌ Fail — Item rejected, seller takes back, no payout</option>
+            </select>
+          </Field>
+          <button style={{ ...btn(pickupResult==="Pass"?T.green:T.red,T.textD,true), marginTop:4 }} onClick={doPickup}>
+            {pickupResult==="Pass"?`Confirm Pickup & Pay Seller ${fmt(t.sellerPrice)} ✦`:"Reject Item — No Payout"}
+          </button>
+        </Modal>
+      ):null; })()}
+    </div>
+  );
+}

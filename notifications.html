@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ledgr — Alerts</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="nav">
+  <div class="nav-brand">
+    <span class="nav-logo">LEDGR</span>
+    <span class="nav-sub">Inventory</span>
+  </div>
+  <div class="nav-links">
+    <a href="index.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M3 4a1 1 0 011-1h12a1 1 0 011 1v2a1 1 0 01-1 1H4a1 1 0 01-1-1V4zM3 10a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H4a1 1 0 01-1-1v-6zM14 9a1 1 0 00-1 1v6a1 1 0 001 1h2a1 1 0 001-1v-6a1 1 0 00-1-1h-2z"/></svg>
+      Dashboard
+    </a>
+    <a href="inventory.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M5 3a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2V5a2 2 0 00-2-2H5zM5 11a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2H5zM11 5a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V5zM11 13a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+      Inventory
+    </a>
+    <a href="lookup.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd"/></svg>
+      Lookup
+    </a>
+    <a href="notifications.html" class="nav-link active">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg>
+      Alerts
+      <span class="notif-badge" hidden></span>
+    </a>
+    <a href="settings.html" class="nav-link">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/></svg>
+      Settings
+    </a>
+    <a href="settings.html" class="nav-avatar-btn" id="navAvatarWrap" title="Profile"></a>
+    <button class="btn-logout" onclick="logout()" title="Sign out">
+      <svg viewBox="0 0 20 20" fill="currentColor" width="15" height="15"><path fill-rule="evenodd" d="M3 3a1 1 0 00-1 1v12a1 1 0 102 0V4a1 1 0 00-1-1zm10.293 9.293a1 1 0 001.414 1.414l3-3a1 1 0 000-1.414l-3-3a1 1 0 10-1.414 1.414L14.586 9H7a1 1 0 100 2h7.586l-1.293 1.293z" clip-rule="evenodd"/></svg>
+      <span>Sign out</span>
+    </button>
+  </div>
+</nav>
+
+<main class="main">
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Alerts</h1>
+      <p class="page-sub" id="subline">—</p>
+    </div>
+    <div style="display:flex;gap:.5rem">
+      <button class="btn btn-ghost" id="btnMarkAll">Mark all read</button>
+      <button class="btn btn-danger" id="btnClear">Clear all</button>
+    </div>
+  </header>
+  <div class="inventory-toolbar" style="margin-bottom:1.25rem">
+    <div class="filter-tabs" id="filterTabs">
+      <button class="filter-tab active" data-filter="all">All</button>
+      <button class="filter-tab" data-filter="unread">Unread</button>
+      <button class="filter-tab" data-filter="status_change">Status changes</button>
+      <button class="filter-tab" data-filter="new_item">New items</button>
+    </div>
+  </div>
+  <div id="notifList"></div>
+</main>
+
+<script src="ledgr.js"></script>
+<script>
+  checkAuth();
+  initTheme();
+  refreshNavAvatar();
+  refreshNavBadge();
+  let currentFilter = 'all';
+  document.getElementById('filterTabs').addEventListener('click', e => {
+    const btn = e.target.closest('.filter-tab');
+    if (!btn) return;
+    document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    render();
+  });
+  document.getElementById('btnMarkAll').addEventListener('click', () => {
+    markAllRead(); refreshNavBadge(); render();
+    showToast('All alerts marked as read');
+  });
+  document.getElementById('btnClear').addEventListener('click', () => {
+    if (!getNotifications().length) return;
+    showDialog('Clear Alerts', 'Remove all alerts? This cannot be undone.', () => {
+      clearNotifications(); refreshNavBadge(); render();
+      showToast('All alerts cleared');
+    });
+  });
+  function filtered() {
+    const notifs = getNotifications();
+    if (currentFilter === 'unread')        return notifs.filter(n => !n.read);
+    if (currentFilter === 'status_change') return notifs.filter(n => n.type === 'status_change');
+    if (currentFilter === 'new_item')      return notifs.filter(n => n.type === 'new_item');
+    return notifs;
+  }
+  function render() {
+    const notifs = filtered();
+    const unread = getNotifications().filter(n => !n.read).length;
+    const total  = getNotifications().length;
+    document.getElementById('subline').textContent = `${total} alert${total !== 1 ? 's' : ''} · ${unread} unread`;
+    const el = document.getElementById('notifList');
+    if (!notifs.length) {
+      el.innerHTML = `<div class="empty"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z"/></svg><h3>No alerts</h3><p>Alerts appear here when item statuses change or new items are added.</p></div>`;
+      return;
+    }
+    el.innerHTML = `<div class="notif-list fade-in">${notifs.map(n => `
+      <div class="notif-item${n.read ? ' read' : ' unread'}" data-id="${esc(n.id)}" onclick="readNotif('${esc(n.id)}')">
+        <div class="notif-dot"></div>
+        <div class="notif-content">
+          <div class="notif-msg">${esc(n.message)}</div>
+          <div class="notif-meta">
+            <span class="notif-time">${timeAgo(n.createdAt)}</span>
+            <span class="notif-type type-${n.type}">${n.type === 'status_change' ? 'Status' : n.type === 'new_item' ? 'New Item' : 'System'}</span>
+          </div>
+        </div>
+        ${n.itemId ? `<a href="inventory.html?id=${esc(n.itemId)}" class="btn btn-xs btn-ghost" onclick="event.stopPropagation()" title="View item in inventory">View</a>` : ''}
+      </div>`).join('')}
+    </div>`;
+  }
+  function readNotif(id) {
+    markRead(id);
+    const el = document.querySelector(`.notif-item[data-id="${id}"]`);
+    if (el) { el.classList.remove('unread'); el.classList.add('read'); }
+    refreshNavBadge();
+    const unread = getNotifications().filter(n => !n.read).length;
+    const total  = getNotifications().length;
+    document.getElementById('subline').textContent = `${total} alert${total !== 1 ? 's' : ''} · ${unread} unread`;
+  }
+  render();
+</script>
+</body>
+</html>

@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Ledgr — Sign In</title>
+  <meta name="theme-color" content="#0b0b13">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Ledgr">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="apple-touch-icon" href="/icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <style>
+    :root {
+      --bg:#0b0b13;--surface:#111120;--card:#17172a;--border:#232338;
+      --gold:#c9a84c;--text:#e2e2f0;--text2:#8888b0;--text3:#40405a;
+      --danger:#ef4444;--danger-bg:rgba(239,68,68,.08);
+      --available:#34d399;--r:12px;--rsm:8px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+      background:var(--bg);color:var(--text);min-height:100vh;min-height:100dvh;
+      display:flex;align-items:center;justify-content:center;
+      -webkit-font-smoothing:antialiased;
+      padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+    .login-wrap{width:100%;max-width:420px;padding:1.5rem}
+    /* Prevent iOS zoom-on-focus: inputs must be ≥16px on phones */
+    @media (max-width:768px){
+      input[type=text],input[type=password],input[type=email],input[type=tel]{font-size:16px}
+    }
+    .login-brand{text-align:center;margin-bottom:2.5rem}
+    .login-logo{
+      font-size:2rem;font-weight:800;letter-spacing:.12em;
+      color:var(--gold);display:block;margin-bottom:.3rem;
+    }
+    .login-sub{font-size:.72rem;color:var(--text3);letter-spacing:.08em;text-transform:uppercase}
+    .login-card{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:var(--r);padding:2rem;
+    }
+    .login-title{font-size:1.1rem;font-weight:700;margin-bottom:.25rem}
+    .login-desc{font-size:.8125rem;color:var(--text2);margin-bottom:1.5rem;line-height:1.5}
+
+    /* Method tabs */
+    .method-tabs{
+      display:flex;gap:.2rem;padding:.2rem;
+      background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--rsm);margin-bottom:1.5rem;
+    }
+    .method-tab{
+      flex:1;padding:.45rem .5rem;border-radius:calc(var(--rsm) - 2px);
+      font-size:.78rem;font-weight:500;color:var(--text2);
+      background:none;border:none;cursor:pointer;
+      transition:color .15s,background .15s;font-family:inherit;
+      display:flex;align-items:center;justify-content:center;gap:.3rem;
+    }
+    .method-tab:hover{color:var(--text)}
+    .method-tab.active{background:var(--card);color:var(--gold);box-shadow:0 2px 8px rgba(0,0,0,.35)}
+    .method-tab svg{flex-shrink:0}
+
+    .form-group{margin-bottom:1.1rem}
+    .form-group label{
+      display:block;font-size:.68rem;font-weight:700;letter-spacing:.07em;
+      text-transform:uppercase;color:var(--text2);margin-bottom:.4rem;
+    }
+    input[type=text],input[type=password],input[type=email],input[type=tel]{
+      width:100%;background:var(--surface);border:1px solid var(--border);
+      border-radius:var(--rsm);padding:.65rem .9rem;color:var(--text);
+      font-size:.875rem;font-family:inherit;outline:none;transition:border-color .15s;
+    }
+    input:focus{border-color:var(--gold)}
+    .pw-wrap{position:relative}
+    .pw-wrap input{padding-right:2.75rem}
+    .toggle-pw{
+      position:absolute;right:.75rem;top:50%;transform:translateY(-50%);
+      background:none;border:none;cursor:pointer;color:var(--text3);
+      display:flex;align-items:center;transition:color .15s;
+    }
+    .toggle-pw:hover{color:var(--text2)}
+    .remember-row{
+      display:flex;align-items:center;gap:.5rem;margin-bottom:1.5rem;
+    }
+    .remember-row input[type=checkbox]{width:16px;height:16px;accent-color:var(--gold);cursor:pointer}
+    .remember-row label{
+      font-size:.8125rem;color:var(--text2);cursor:pointer;
+      text-transform:none;letter-spacing:0;
+    }
+    .btn-submit{
+      width:100%;background:var(--gold);color:#0b0b13;border:none;
+      border-radius:var(--rsm);padding:.7rem 1rem;font-size:.875rem;
+      font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .15s;
+    }
+    .btn-submit:hover{opacity:.88}
+    .btn-submit:disabled{opacity:.5;cursor:not-allowed}
+    .msg{
+      border-radius:var(--rsm);padding:.65rem .9rem;
+      font-size:.8125rem;margin-bottom:1.1rem;display:none;
+    }
+    .msg.show{display:block}
+    .msg.error{background:var(--danger-bg);border:1px solid rgba(239,68,68,.2);color:var(--danger)}
+    .msg.ok{background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.2);color:var(--available)}
+    .lockout-box{
+      text-align:center;padding:1.25rem;font-size:.8125rem;
+      color:var(--text2);display:none;
+    }
+    #lockTimer{font-weight:700;color:var(--danger);font-size:1rem}
+
+    /* Bottom switch row */
+    .switch-row{
+      margin-top:1.5rem;padding-top:1.25rem;
+      border-top:1px solid var(--border);
+      text-align:center;
+      font-size:.8125rem;color:var(--text2);
+    }
+    .switch-row button{
+      background:none;border:none;color:var(--gold);
+      font-size:.8125rem;font-family:inherit;cursor:pointer;
+      font-weight:600;text-decoration:underline;text-underline-offset:2px;
+      transition:opacity .15s;
+    }
+    .switch-row button:hover{opacity:.75}
+
+    /* OTP verification step */
+    .otp-hint{font-size:.8125rem;color:var(--text2);margin-bottom:1.5rem;line-height:1.6}
+    .otp-hint strong{color:var(--text)}
+    #otpCode{
+      text-align:center;font-size:1.75rem;font-weight:700;
+      letter-spacing:.35em;font-family:monospace;padding-left:.35em;
+    }
+    .otp-timer{font-size:.75rem;color:var(--text3);margin-bottom:1.1rem;text-align:center}
+    .otp-resend{
+      display:block;width:100%;margin-top:.9rem;background:none;border:none;
+      color:var(--gold);font-size:.8125rem;font-family:inherit;cursor:pointer;
+      text-align:center;text-decoration:underline;text-underline-offset:2px;
+      transition:opacity .15s;
+    }
+    .otp-resend:hover{opacity:.75}
+    .otp-resend:disabled{color:var(--text3);text-decoration:none;cursor:default}
+    .otp-back{
+      display:block;width:100%;margin-top:.5rem;background:none;border:none;
+      color:var(--text3);font-size:.75rem;font-family:inherit;cursor:pointer;
+      text-align:center;transition:color .15s;
+    }
+    .otp-back:hover{color:var(--text2)}
+
+    /* Confirm dialog overlay */
+    .confirm-overlay{
+      position:fixed;inset:0;z-index:200;
+      background:rgba(0,0,0,.65);backdrop-filter:blur(4px);
+      display:none;align-items:center;justify-content:center;
+    }
+    .confirm-overlay.show{display:flex}
+    .confirm-box{
+      background:var(--card);border:1px solid var(--border);
+      border-radius:var(--r);padding:1.75rem;max-width:380px;width:90%;
+      box-shadow:0 8px 32px rgba(0,0,0,.5);
+    }
+    .confirm-box h3{font-size:1rem;margin-bottom:.5rem}
+    .confirm-box p{font-size:.8125rem;color:var(--text2);line-height:1.5;margin-bottom:1.5rem}
+    .confirm-box p strong{color:var(--danger)}
+    .confirm-actions{display:flex;gap:.6rem;justify-content:flex-end}
+    .btn-cancel{
+      background:none;border:1px solid var(--border);
+      border-radius:var(--rsm);padding:.55rem 1rem;
+      font-size:.8125rem;font-family:inherit;color:var(--text2);cursor:pointer;
+      transition:border-color .15s,color .15s;
+    }
+    .btn-cancel:hover{border-color:var(--border-h, #363658);color:var(--text)}
+    .btn-reset{
+      background:var(--danger-bg);border:1px solid rgba(239,68,68,.25);
+      border-radius:var(--rsm);padding:.55rem 1rem;
+      font-size:.8125rem;font-weight:600;font-family:inherit;color:var(--danger);cursor:pointer;
+      transition:background .15s;
+    }
+    .btn-reset:hover{background:rgba(239,68,68,.15)}
+  </style>
+</head>
+<body>
+<div class="login-wrap">
+  <div class="login-brand">
+    <span class="login-logo">LEDGR</span>
+    <span class="login-sub">Inventory Management</span>
+  </div>
+  <div class="login-card">
+    <h1 class="login-title" id="cardTitle">Sign in</h1>
+    <p class="login-desc" id="cardDesc">Enter your credentials to access your inventory.</p>
+
+    <div class="msg error" id="errMsg"></div>
+    <div class="msg ok"   id="okMsg"></div>
+
+    <div class="lockout-box" id="lockoutBox">
+      Too many failed attempts.<br>
+      Try again in <span id="lockTimer">--:--</span>
+    </div>
+
+    <!-- Method selector (setup mode only) -->
+    <div class="method-tabs" id="methodTabs" style="display:none">
+      <button type="button" class="method-tab active" data-method="username" onclick="setMethod('username')">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/></svg>
+        Username
+      </button>
+      <button type="button" class="method-tab" data-method="email" onclick="setMethod('email')">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z"/><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"/></svg>
+        Email
+      </button>
+      <button type="button" class="method-tab" data-method="phone" onclick="setMethod('phone')">
+        <svg viewBox="0 0 20 20" fill="currentColor" width="13" height="13"><path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z"/></svg>
+        Phone
+      </button>
+    </div>
+
+    <form id="loginForm">
+      <div class="form-group">
+        <label id="identLabel" for="identifier">Username</label>
+        <input type="text" id="identifier" placeholder="Enter username" autocomplete="username" required>
+      </div>
+      <div class="form-group" id="notifEmailGroup" style="display:none">
+        <label for="notifEmail">Email Address <span style="color:var(--text3);font-weight:400;text-transform:none;letter-spacing:0">(for notifications)</span></label>
+        <input type="email" id="notifEmail" placeholder="you@example.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="password" placeholder="Enter password" autocomplete="current-password" required>
+          <button type="button" class="toggle-pw" onclick="togglePw()" aria-label="Show/hide password">
+            <svg id="eyeIcon" viewBox="0 0 20 20" fill="currentColor" width="16" height="16"><path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="form-group" id="confirmGroup" style="display:none">
+        <label for="confirmPw">Confirm Password</label>
+        <div class="pw-wrap">
+          <input type="password" id="confirmPw" placeholder="Re-enter password" autocomplete="new-password">
+        </div>
+      </div>
+      <div class="remember-row" id="rememberRow">
+        <input type="checkbox" id="rememberMe" checked>
+        <label for="rememberMe">Keep me signed in</label>
+      </div>
+      <button type="submit" class="btn-submit" id="submitBtn">Sign In</button>
+    </form>
+
+    <!-- OTP verification step (shown after credentials verified) -->
+    <div id="otpStep" style="display:none">
+      <p class="otp-hint">Enter the 6-digit code sent to <strong id="otpEmailHint"></strong></p>
+      <div class="form-group">
+        <label for="otpCode">Verification Code</label>
+        <input type="text" id="otpCode" placeholder="000000" maxlength="6"
+               inputmode="numeric" autocomplete="one-time-code">
+      </div>
+      <div class="otp-timer" id="otpTimer"></div>
+      <button type="button" class="btn-submit" id="otpSubmitBtn" onclick="submitOtp()">Verify</button>
+      <button type="button" class="otp-resend" id="otpResendBtn" onclick="resendOtp()">Didn't get it? Resend code</button>
+      <button type="button" class="otp-back" onclick="cancelOtp()">← Back to sign in</button>
+    </div>
+
+    <!-- Bottom switch link -->
+    <div class="switch-row" id="switchRow">
+      <!-- populated by JS -->
+    </div>
+  </div>
+</div>
+
+<!-- Reset confirmation dialog -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <h3>Create new account?</h3>
+    <p>This will <strong>delete your current account</strong> and all saved credentials. Your inventory data will remain, but you will need to set a new login. This cannot be undone.</p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="btn-reset" onclick="doReset()">Yes, reset &amp; create new</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const LS_AUTH  = 'ledgr_auth';
+  const SS_TOKEN = 'ledgr_token';
+  const LS_TOKEN = 'ledgr_token_r';
+  const LS_FAILS = 'ledgr_fails';
+  const MAX_FAILS = 5;
+  const LOCK_MS   = 15 * 60 * 1000;
+
+  let isSetup  = false;
+  let method   = 'username';
+
+  const METHOD_CONFIG = {
+    username: { label:'Username',     type:'text',  placeholder:'Enter username',      autocomplete:'username' },
+    email:    { label:'Email Address',type:'email', placeholder:'Enter email address', autocomplete:'email' },
+    phone:    { label:'Phone Number', type:'tel',   placeholder:'+234 or 0xxx',        autocomplete:'tel' },
+  };
+
+  async function sha256(text) {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('ledgr:' + text));
+    return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2,'0')).join('');
+  }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2,9); }
+  function getAuth() { try { return JSON.parse(localStorage.getItem(LS_AUTH)); } catch { return null; } }
+  function getFails() { try { return JSON.parse(localStorage.getItem(LS_FAILS)) || {count:0,since:0}; } catch { return {count:0,since:0}; } }
+  function isLocked() { const f=getFails(); return f.count>=MAX_FAILS && (Date.now()-f.since)<LOCK_MS; }
+  function msLeft()   { const f=getFails(); return Math.max(0, LOCK_MS-(Date.now()-f.since)); }
+
+  function showErr(msg) {
+    const e=document.getElementById('errMsg'); e.textContent=msg; e.classList.add('show');
+    document.getElementById('okMsg').classList.remove('show');
+  }
+  function showOk(msg) {
+    const e=document.getElementById('okMsg'); e.textContent=msg; e.classList.add('show');
+    document.getElementById('errMsg').classList.remove('show');
+  }
+
+  function setMethod(m) {
+    method = m;
+    const cfg = METHOD_CONFIG[m];
+    const input = document.getElementById('identifier');
+    input.type         = cfg.type;
+    input.placeholder  = cfg.placeholder;
+    input.autocomplete = cfg.autocomplete;
+    document.getElementById('identLabel').textContent = cfg.label;
+    document.querySelectorAll('.method-tab').forEach(t => t.classList.toggle('active', t.dataset.method === m));
+    document.getElementById('errMsg').classList.remove('show');
+  }
+
+  function togglePw() {
+    const pw=document.getElementById('password');
+    const show=pw.type==='password';
+    pw.type=show?'text':'password';
+    document.getElementById('eyeIcon').innerHTML=show
+      ?'<path fill-rule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26l1.514 1.515a2.003 2.003 0 012.45 2.45l1.514 1.514a4 4 0 00-5.478-5.478z" clip-rule="evenodd"/><path d="M12.454 16.697L9.75 13.992a4 4 0 01-3.742-3.741L2.335 6.578A9.98 9.98 0 00.458 10c1.274 4.057 5.064 7 9.542 7 .847 0 1.669-.105 2.454-.303z"/>'
+      :'<path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/><path fill-rule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z" clip-rule="evenodd"/>';
+  }
+
+  function validateIdentifier(value) {
+    if (method === 'email') return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) || 'Enter a valid email address.';
+    if (method === 'phone') { const d=value.replace(/[\s\-().+]/g,''); return d.length>=7 || 'Enter a valid phone number.'; }
+    return value.length >= 2 || 'Username must be at least 2 characters.';
+  }
+
+  /* Confirm dialog */
+  function openConfirm()  { document.getElementById('confirmOverlay').classList.add('show'); }
+  function closeConfirm() { document.getElementById('confirmOverlay').classList.remove('show'); }
+  function doReset() {
+    localStorage.removeItem(LS_AUTH);
+    localStorage.removeItem(LS_TOKEN);
+    localStorage.removeItem(LS_FAILS);
+    sessionStorage.removeItem(SS_TOKEN);
+    closeConfirm();
+    location.reload();
+  }
+  document.getElementById('confirmOverlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('confirmOverlay')) closeConfirm();
+  });
+
+  /* Switch between login / setup modes in-place */
+  function switchToLogin() {
+    isSetup = false;
+    method  = 'username';
+    document.getElementById('cardTitle').textContent      = 'Sign in';
+    document.getElementById('cardDesc').textContent       = 'Enter your credentials to access your inventory.';
+    document.getElementById('confirmGroup').style.display  = 'none';
+    document.getElementById('notifEmailGroup').style.display = 'none';
+    document.getElementById('submitBtn').textContent      = 'Sign In';
+    document.getElementById('rememberRow').style.display   = '';
+    document.getElementById('methodTabs').style.display    = 'none';
+    const cfg   = METHOD_CONFIG['username'];
+    const input = document.getElementById('identifier');
+    input.value = ''; input.type = cfg.type; input.placeholder = cfg.placeholder; input.autocomplete = cfg.autocomplete;
+    document.getElementById('password').value = '';
+    document.getElementById('identLabel').textContent = cfg.label;
+    document.getElementById('errMsg').classList.remove('show');
+    document.getElementById('okMsg').classList.remove('show');
+    renderSwitchRow();
+  }
+
+  function switchToSetup() {
+    isSetup = true;
+    method  = 'username';
+    document.getElementById('cardTitle').textContent      = 'Create your account';
+    document.getElementById('cardDesc').textContent       = 'Choose how to identify yourself and set a password.';
+    document.getElementById('confirmGroup').style.display  = '';
+    document.getElementById('notifEmailGroup').style.display = '';
+    document.getElementById('submitBtn').textContent      = 'Create Account';
+    document.getElementById('rememberRow').style.display   = 'none';
+    document.getElementById('methodTabs').style.display    = '';
+    const cfg   = METHOD_CONFIG['username'];
+    const input = document.getElementById('identifier');
+    input.value = ''; input.type = cfg.type; input.placeholder = cfg.placeholder; input.autocomplete = cfg.autocomplete;
+    document.getElementById('password').value = '';
+    document.getElementById('confirmPw').value = '';
+    document.getElementById('notifEmail').value = '';
+    document.getElementById('identLabel').textContent = cfg.label;
+    document.querySelectorAll('.method-tab').forEach(t => t.classList.toggle('active', t.dataset.method === 'username'));
+    document.getElementById('errMsg').classList.remove('show');
+    renderSwitchRow();
+  }
+
+  /* Switch row — show context-appropriate link */
+  function renderSwitchRow() {
+    const row = document.getElementById('switchRow');
+    if (isSetup) {
+      row.innerHTML = 'Already have an account? <button onclick="switchToLogin()">Sign in instead</button>';
+    } else if (getAuth()) {
+      row.innerHTML = 'Need a new account? <button onclick="openConfirm()">Reset &amp; create new</button>';
+    } else {
+      row.innerHTML = 'No account yet? <button onclick="switchToSetup()">Create one</button>';
+    }
+  }
+
+  let lockInterval;
+  function tickLockout() {
+    if (!isLocked()) {
+      document.getElementById('lockoutBox').style.display='none';
+      document.getElementById('loginForm').style.display='';
+      clearInterval(lockInterval); return;
+    }
+    document.getElementById('lockoutBox').style.display='';
+    document.getElementById('loginForm').style.display='none';
+    const ms=msLeft(), m=Math.floor(ms/60000), s=Math.floor((ms%60000)/1000);
+    document.getElementById('lockTimer').textContent=`${m}:${s.toString().padStart(2,'0')}`;
+  }
+
+  (function init() {
+    const auth  = getAuth();
+    const token = sessionStorage.getItem(SS_TOKEN) || localStorage.getItem(LS_TOKEN);
+    if (auth && token === auth.token) { location.replace('index.html'); return; }
+
+    if (!auth) {
+      isSetup = true;
+      document.getElementById('cardTitle').textContent  = 'Create your account';
+      document.getElementById('cardDesc').textContent   = 'Choose how to identify yourself and set a password.';
+      document.getElementById('confirmGroup').style.display    = '';
+      document.getElementById('notifEmailGroup').style.display = '';
+      document.getElementById('submitBtn').textContent  = 'Create Account';
+      document.getElementById('rememberRow').style.display  = 'none';
+      document.getElementById('methodTabs').style.display   = '';
+    } else {
+      const m = auth.method || 'username';
+      method  = m;
+      const cfg = METHOD_CONFIG[m];
+      const input = document.getElementById('identifier');
+      input.type         = cfg.type;
+      input.placeholder  = cfg.placeholder;
+      input.autocomplete = cfg.autocomplete;
+      document.getElementById('identLabel').textContent = cfg.label;
+    }
+
+    renderSwitchRow();
+    if (isLocked()) { tickLockout(); lockInterval = setInterval(tickLockout, 1000); }
+  })();
+
+  document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    if (isLocked()) { tickLockout(); lockInterval = setInterval(tickLockout, 1000); return; }
+
+    const identifier = document.getElementById('identifier').value.trim();
+    const password   = document.getElementById('password').value;
+    const btn        = document.getElementById('submitBtn');
+
+    if (!identifier) { showErr(METHOD_CONFIG[method].label + ' is required.'); return; }
+    const validResult = validateIdentifier(identifier);
+    if (typeof validResult === 'string') { showErr(validResult); return; }
+    if (!password) { showErr('Password is required.'); return; }
+
+    btn.disabled = true;
+    btn.textContent = isSetup ? 'Setting up…' : 'Signing in…';
+
+    if (isSetup) {
+      const confirmPw  = document.getElementById('confirmPw').value;
+      const notifEmail = document.getElementById('notifEmail').value.trim();
+      if (password !== confirmPw) { showErr('Passwords do not match.'); btn.disabled=false; btn.textContent='Create Account'; return; }
+      if (password.length < 6)    { showErr('Password must be at least 6 characters.'); btn.disabled=false; btn.textContent='Create Account'; return; }
+      const hash  = await sha256(password);
+      const token = uid();
+      localStorage.setItem(LS_AUTH, JSON.stringify({ identifier, method, hash, token, notifEmail: notifEmail || '' }));
+      // New account: clear any stale data from a previous session on this device
+      localStorage.removeItem('ledgr_notifs');
+      localStorage.removeItem('ledgr_items');
+      localStorage.removeItem('ledgr_profile');
+      localStorage.removeItem('ledgr_ig_token');
+      localStorage.removeItem('ledgr_ig_user_id');
+      localStorage.removeItem('ledgr_ig_username');
+      localStorage.removeItem('ledgr_ig_expires');
+      localStorage.removeItem('ledgr_ig_sync');
+      sessionStorage.setItem(SS_TOKEN, token);
+      localStorage.setItem(LS_TOKEN, token); // always remember on registration
+      if (notifEmail) sendAuthNotif('register', notifEmail, identifier);
+      showOk('Account created! Redirecting…');
+      setTimeout(() => location.replace('index.html'), 800);
+    } else {
+      const auth = getAuth();
+      if (!auth) { showErr('No account found. Create one first.'); btn.disabled=false; btn.textContent='Sign In'; return; }
+      const hash = await sha256(password);
+      const storedId = auth.identifier || auth.username || '';
+      if (identifier !== storedId || hash !== auth.hash) {
+        const f   = getFails();
+        const now = Date.now();
+        const newCount = (f.count===0||(now-f.since)>=LOCK_MS) ? 1 : f.count+1;
+        localStorage.setItem(LS_FAILS, JSON.stringify({count:newCount, since:newCount===1?now:f.since}));
+        btn.disabled=false; btn.textContent='Sign In';
+        const left = MAX_FAILS - newCount;
+        showErr(left<=0 ? 'Too many attempts. Account locked for 15 minutes.' : left<=2 ? `Invalid credentials. ${left} attempt${left===1?'':'s'} remaining.` : 'Invalid credentials.');
+        if (isLocked()) { tickLockout(); lockInterval=setInterval(tickLockout,1000); }
+        return;
+      }
+      const newToken = uid();
+      if (auth.notifEmail) {
+        btn.textContent = 'Sending code…';
+        await sendOtpAndShowStep(auth, newToken);
+      } else {
+        completeLogin(auth, newToken);
+      }
+    }
+  });
+
+  // ─── OTP flow ────────────────────────────────────────────────────────────────
+  let otpToken  = null;
+  let otpExpiry = null;
+  let otpTimerInterval = null;
+  let pendingLogin = null;
+
+  async function sendOtpAndShowStep(auth, newToken) {
+    pendingLogin = { auth, newToken };
+    try {
+      const res  = await fetch('/api/send-otp', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: auth.notifEmail }),
+      });
+      const data = await res.json();
+      if (!data.sent) { completeLogin(auth, newToken); return; }
+      otpToken  = data.token;
+      otpExpiry = Date.now() + 10 * 60 * 1000;
+      document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('switchRow').style.display = 'none';
+      document.getElementById('otpStep').style.display   = '';
+      document.getElementById('otpEmailHint').textContent = maskEmail(auth.notifEmail);
+      document.getElementById('otpCode').value = '';
+      document.getElementById('otpCode').focus();
+      document.getElementById('errMsg').classList.remove('show');
+      document.getElementById('okMsg').classList.remove('show');
+      startOtpTimer();
+    } catch {
+      completeLogin(auth, newToken);
+    }
+  }
+
+  function maskEmail(email) {
+    const at = email.lastIndexOf('@');
+    if (at < 2) return email;
+    return email.slice(0, 2) + '•••' + email.slice(at);
+  }
+
+  function startOtpTimer() {
+    clearInterval(otpTimerInterval);
+    function tick() {
+      const left = Math.max(0, otpExpiry - Date.now());
+      const m = Math.floor(left / 60000);
+      const s = Math.floor((left % 60000) / 1000);
+      const el = document.getElementById('otpTimer');
+      if (el) el.textContent = left > 0
+        ? `Code expires in ${m}:${s.toString().padStart(2, '0')}`
+        : 'Code expired — click Resend for a new one.';
+      if (left === 0) clearInterval(otpTimerInterval);
+    }
+    tick();
+    otpTimerInterval = setInterval(tick, 1000);
+  }
+
+  async function submitOtp() {
+    const code = document.getElementById('otpCode').value.trim();
+    if (!/^\d{6}$/.test(code)) { showErr('Enter the 6-digit code from your email.'); return; }
+    const btn = document.getElementById('otpSubmitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Verifying…';
+    document.getElementById('errMsg').classList.remove('show');
+    try {
+      const res  = await fetch('/api/verify-otp', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token: otpToken, code }),
+      });
+      const data = await res.json();
+      if (data.valid) {
+        clearInterval(otpTimerInterval);
+        completeLogin(pendingLogin.auth, pendingLogin.newToken);
+      } else {
+        showErr(data.error === 'Code expired'
+          ? 'Code expired — click Resend for a new one.'
+          : 'Incorrect code. Check your email and try again.');
+        btn.disabled = false;
+        btn.textContent = 'Verify';
+      }
+    } catch {
+      showErr('Verification failed. Try again.');
+      btn.disabled = false;
+      btn.textContent = 'Verify';
+    }
+  }
+
+  document.getElementById('otpCode').addEventListener('keydown', e => {
+    if (e.key === 'Enter') submitOtp();
+  });
+
+  async function resendOtp() {
+    if (!pendingLogin) return;
+    const btn = document.getElementById('otpResendBtn');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    document.getElementById('errMsg').classList.remove('show');
+    try {
+      const res  = await fetch('/api/send-otp', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: pendingLogin.auth.notifEmail }),
+      });
+      const data = await res.json();
+      if (data.sent) {
+        otpToken  = data.token;
+        otpExpiry = Date.now() + 10 * 60 * 1000;
+        startOtpTimer();
+        document.getElementById('otpCode').value = '';
+        showOk('New code sent!');
+      } else {
+        showErr('Could not send code. Try again.');
+      }
+    } catch {
+      showErr('Could not send code. Try again.');
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Didn\'t get it? Resend code';
+    }
+  }
+
+  function cancelOtp() {
+    clearInterval(otpTimerInterval);
+    otpToken = null;
+    pendingLogin = null;
+    document.getElementById('otpStep').style.display   = 'none';
+    document.getElementById('loginForm').style.display = '';
+    document.getElementById('switchRow').style.display = '';
+    document.getElementById('submitBtn').disabled = false;
+    document.getElementById('submitBtn').textContent = 'Sign In';
+    document.getElementById('password').value = '';
+    document.getElementById('errMsg').classList.remove('show');
+    document.getElementById('okMsg').classList.remove('show');
+  }
+
+  function completeLogin(auth, newToken) {
+    auth.token = newToken;
+    localStorage.setItem(LS_AUTH, JSON.stringify(auth));
+    localStorage.setItem(LS_FAILS, JSON.stringify({ count: 0, since: 0 }));
+    const remEl = document.getElementById('rememberMe');
+    if (remEl && remEl.checked) localStorage.setItem(LS_TOKEN, newToken);
+    else localStorage.removeItem(LS_TOKEN);
+    sessionStorage.setItem(SS_TOKEN, newToken);
+    location.replace('index.html');
+  }
+
+  function sendAuthNotif(type, email, identifier) {
+    fetch('/api/send-notification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, email, identifier }),
+    }).catch(() => {});
+  }
+
+  // PWA service worker (offline shell + installability)
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('/sw.js').catch(() => {}));
+  }
+</script>
+</body>
+</html>
